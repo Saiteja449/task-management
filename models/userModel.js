@@ -3,14 +3,11 @@ import bcrypt from "bcrypt";
 
 const userSchema = mongoose.Schema(
   {
-    firstName: {
+    name: {
       type: String,
-      required: [true, "Please add a first name"],
+      required: [true, "Please add a name"],
     },
-    lastName: {
-      type: String,
-      required: [true, "Please add a last name"],
-    },
+
     email: {
       type: String,
       required: [true, "Please add an email"],
@@ -57,11 +54,8 @@ const userSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
-    permissions: {
-      tasks: { type: Boolean, default: true },
-      manageGroups: { type: Boolean, default: false },
-    },
   },
+
   {
     timestamps: true,
   },

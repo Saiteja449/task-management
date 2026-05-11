@@ -43,7 +43,8 @@ export const getAdminStats = async (req, res) => {
     const recentActivity = await Notification.find({ adminId })
       .sort({ createdAt: -1 })
       .limit(10)
-      .populate("userId", "firstName lastName avatar");
+      .populate("userId", "name avatar");
+
 
     res.status(200).json({
       status: true,
@@ -58,7 +59,8 @@ export const getAdminStats = async (req, res) => {
         chartData: last7Days,
         recentActivity: recentActivity.map((n) => ({
           id: n._id,
-          user: n.userId ? `${n.userId.firstName} ${n.userId.lastName}` : "System",
+          user: n.userId ? n.userId.name : "System",
+
           avatar: n.userId?.avatar,
           title: n.title,
           message: n.message,

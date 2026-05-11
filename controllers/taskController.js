@@ -28,7 +28,7 @@ export const createTask = async (req, res) => {
       reminders,
       recurring,
     } = req.body;
-    const missingFields = requiredFields.filter((field) => !req.body[field]);
+    const missingFields = requiredFields.filter((field) => req.body[field] === undefined);
 
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -50,6 +50,7 @@ export const createTask = async (req, res) => {
       assignees: assignees || [],
       groupId: groupId || "personal",
       adminId,
+      createdBy: req.userId,
       attachments: attachments || [],
       reminders: reminders || false,
       recurring: recurring || "None",
@@ -88,8 +89,9 @@ export const getTasks = async (req, res) => {
     const adminId = user.role === "Admin" ? user._id : user.adminId;
 
     const tasks = await Task.find({ adminId })
-      .populate("assignees", "firstName lastName email role avatar")
-      .populate("comments.userId", "firstName lastName avatar");
+      .populate("assignees", "name email role avatar")
+      .populate("comments.userId", "name avatar");
+
 
     res.status(200).json({
       status: true,
@@ -127,7 +129,8 @@ export const updateTask = async (req, res) => {
           userId: adminId,
           adminId,
           title: "Task Status Updated",
-          message: `The task "${task.title}" status has been updated to "${req.body.status}" by ${user.firstName}.`,
+          message: `The task "${task.title}" status has been updated to "${req.body.status}" by ${user.name}.`,
+
           type: "task",
         });
 
@@ -242,15 +245,17 @@ export const addComment = async (req, res) => {
           userId: adminId,
           adminId,
           title: "New Comment on Task",
-          message: `${user.firstName} commented on "${task.title}": "${text.substring(0, 50)}..."`,
+          message: `${user.name} commented on "${task.title}": "${text.substring(0, 50)}..."`,
           type: "task",
         });
+
       }
 
       const updatedTask = await Task.findById(id).populate(
         "comments.userId",
-        "firstName lastName avatar",
+        "name avatar",
       );
+
 
       res.status(201).json({
         status: true,
@@ -264,3 +269,123 @@ export const addComment = async (req, res) => {
     res.status(500).json({ status: false, message: error.message });
   }
 };
+
+export const getAssignedTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find({
+      assignees: req.userId,
+      groupId: { $ne: "personal" }
+    })
+    .populate("assignees", "name email role avatar")
+    .populate("comments.userId", "name avatar");
+
+    res.status(200).json({
+      status: true,
+      message: "Assigned tasks fetched successfully",
+      data: tasks,
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const getTaskDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const task = await Task.findById(id)
+      .populate("assignees", "name email role avatar")
+      .populate("comments.userId", "name avatar");
+
+    if (!task) {
+      return res.status(404).json({ status: false, message: "Task not found" });
+    }
+
+    const user = await User.findById(req.userId);
+    const adminId = user.role === "Admin" ? user._id : user.adminId;
+
+    if (task.adminId.toString() !== adminId.toString()) {
+      const isAssignee = task.assignees.some(
+        (a) => a._id.toString() === req.userId.toString()
+      );
+      if (!isAssignee) {
+        return res
+          .status(403)
+          .json({ status: false, message: "Not authorized" });
+      }
+    }
+
+    res.status(200).json({
+      status: true,
+      message: "Task details fetched successfully",
+      data: task,
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const updateTaskStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const task = await Task.findById(id);
+
+    if (!task) {
+      return res.status(404).json({ status: false, message: "Task not found" });
+    }
+
+    const user = await User.findById(req.userId);
+    const adminId = user.role === "Admin" ? user._id : user.adminId;
+
+    // Check if admin or assigned employee
+    const isAssignee = task.assignees.some(
+      (a) => a.toString() === req.userId.toString()
+    );
+    const isAdmin = task.adminId.toString() === adminId.toString();
+
+    if (!isAdmin && !isAssignee) {
+      return res.status(403).json({ status: false, message: "Not authorized" });
+    }
+
+    const oldStatus = task.status;
+    task.status = status;
+    const updatedTask = await task.save();
+
+    // Notify if status changed
+    if (status !== oldStatus) {
+      // Notify admin
+      await createNotification({
+        userId: task.adminId,
+        adminId: task.adminId,
+        title: "Task Status Updated",
+        message: `The task "${task.title}" status has been updated to "${status}" by ${user.name}.`,
+        type: "task",
+      });
+
+      // Notify other assignees
+      for (const assigneeId of task.assignees) {
+        if (assigneeId.toString() !== req.userId.toString()) {
+          await createNotification({
+            userId: assigneeId,
+            adminId: task.adminId,
+            title: "Task Status Updated",
+            message: `The status of task "${task.title}" has been updated to "${status}".`,
+            type: "task",
+          });
+        }
+      }
+    }
+
+    res.status(200).json({
+      status: true,
+      message: "Task status updated successfully",
+      data: updatedTask,
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+
+

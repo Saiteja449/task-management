@@ -5,8 +5,8 @@ import { sendNotificationEmail } from "../helpers/emailHelper.js";
 export const signupUser = async (req, res) => {
   try {
     const requiredFields = [
-      "firstName",
-      "lastName",
+      "name",
+
       "email",
       "password",
       "businessName",
@@ -29,15 +29,8 @@ export const signupUser = async (req, res) => {
       });
     }
 
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      businessName,
-      companyDetails,
-      companySize,
-    } = req.body;
+    const { name, email, password, businessName, companyDetails, companySize } =
+      req.body;
 
     const role = "Admin";
 
@@ -50,8 +43,8 @@ export const signupUser = async (req, res) => {
     }
 
     const user = await User.create({
-      firstName,
-      lastName,
+      name,
+
       email,
       password,
       role,
@@ -71,7 +64,8 @@ export const signupUser = async (req, res) => {
       await sendNotificationEmail(
         user.email,
         "Welcome to TaskFlow!",
-        `Welcome to TaskFlow, ${user.firstName}!`,
+        `Welcome to TaskFlow, ${user.name}!`,
+
         `<p>We're excited to have you on board. Your account for <strong>${user.businessName}</strong> has been successfully created.</p>
          <p>You can now start managing your tasks and employees.</p>`,
       );
@@ -133,9 +127,13 @@ export const loginUser = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select("-password");
+    const user = await User.findById(req.userId).select("-password").lean();
 
     if (user) {
+      if (!user.name && (user.firstName || user.lastName)) {
+        user.name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+      }
+
       res.status(200).json({
         status: true,
         message: "User profile fetched successfully",
@@ -163,7 +161,8 @@ export const resetPassword = async (req, res) => {
         "Your Password Has Been Reset - TaskFlow",
         "Password Reset Successful",
         `
-        <p>Hello ${user.firstName},</p>
+        <p>Hello ${user.name},</p>
+
         <p>Your password has been reset as per your request. You can now log in using the following credentials:</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0;"><strong>Email:</strong> ${user.email}</p>

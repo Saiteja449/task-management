@@ -53,7 +53,8 @@ export const getGroups = async (req, res) => {
   try {
     const groups = await Group.find({
       $or: [{ admin: req.userId }, { members: req.userId }],
-    }).populate("members", "firstName lastName email role avatar");
+    }).populate("members", "name email role avatar");
+
 
     res.status(200).json({
       status: true,
@@ -161,8 +162,9 @@ export const getGroupDetails = async (req, res) => {
 
     const group = await Group.findById(id).populate(
       "members",
-      "firstName lastName email role avatar"
+      "name email role avatar"
     );
+
 
     if (!group) {
       return res.status(404).json({ status: false, message: "Group not found" });
@@ -183,8 +185,9 @@ export const getGroupDetails = async (req, res) => {
     }
 
     const tasks = await Task.find({ groupId: id })
-      .populate("assignees", "firstName lastName email role avatar")
-      .populate("comments.userId", "firstName lastName avatar");
+      .populate("assignees", "name email role avatar")
+      .populate("comments.userId", "name avatar");
+
 
     res.status(200).json({
       status: true,

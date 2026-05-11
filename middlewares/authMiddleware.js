@@ -42,26 +42,7 @@ export const admin = async (req, res, next) => {
   }
 };
 
-export const checkPermission = (permission) => {
-  return async (req, res, next) => {
-    try {
-      const user = await User.findById(req.userId);
-      if (!user) {
-        return res.status(404).json({ status: false, message: "User not found" });
-      }
 
-      if (user.role === "Admin" || (user.permissions && user.permissions[permission])) {
-        next();
-      } else {
-        res.status(403).json({
-          status: false,
-          message: `Access denied: You do not have the '${permission}' permission`,
-        });
-      }
-    } catch (error) {
-      res.status(500).json({ status: false, message: error.message });
-    }
-  };
-};
+
 
 

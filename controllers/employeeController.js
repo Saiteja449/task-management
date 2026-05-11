@@ -1,10 +1,35 @@
 import User from "../models/userModel.js";
+import Task from "../models/taskModel.js";
 import sendEmployeeEmail, { sendNotificationEmail } from "../helpers/emailHelper.js";
+
+export const getEmployeeDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const employee = await User.findOne({ _id: id, adminId: req.userId });
+
+    if (!employee) {
+      return res.status(404).json({ status: false, message: "Employee not found" });
+    }
+
+    const tasks = await Task.find({ assignees: id })
+      .populate("comments.userId", "name avatar");
+
+    res.status(200).json({
+      status: true,
+      message: "Employee details fetched successfully",
+      data: {
+        employee,
+        tasks,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
 
 export const addEmployee = async (req, res) => {
   try {
-    const { name, email, mobile, role, permissions, designation } = req.body;
-
+    const { name, email, mobile, role, designation } = req.body;
 
     const requiredFields = ["name", "email", "mobile", "role"];
     const missingFields = requiredFields.filter((field) => !req.body[field]);
@@ -25,10 +50,7 @@ export const addEmployee = async (req, res) => {
         .json({ status: false, message: "Employee already exists" });
     }
 
-    // Split name into firstName and lastName
-    const nameParts = name.trim().split(" ");
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(" ") || "";
+
 
     const generateRandomPassword = (length = 10) => {
       const charset =
@@ -43,8 +65,8 @@ export const addEmployee = async (req, res) => {
     const defaultPassword = generateRandomPassword();
 
     const employee = await User.create({
-      firstName,
-      lastName,
+      name,
+
       email,
       mobile,
       role,
@@ -53,11 +75,8 @@ export const addEmployee = async (req, res) => {
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
       status: "Offline",
       adminId: req.userId,
-      permissions: permissions || {
-        tasks: true,
-        manageGroups: false,
-      },
     });
+
 
     if (employee) {
       await sendEmployeeEmail(email, defaultPassword, name);
@@ -79,13 +98,20 @@ export const getEmployees = async (req, res) => {
     const employees = await User.find({ 
       adminId: req.userId,
       role: "Employee" 
-    }).select("-password");
+    }).select("-password").lean();
     
+    // Add fallback for name for legacy users
+    const sanitizedEmployees = employees.map(emp => ({
+        ...emp,
+        name: emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'No Name'
+    }));
+
     res.status(200).json({
       status: true,
       message: "Employees fetched successfully",
-      data: employees,
+      data: sanitizedEmployees,
     });
+
   } catch (error) {
     res.status(500).json({ status: false, message: error.message });
   }
@@ -100,18 +126,16 @@ export const updateEmployee = async (req, res) => {
 
     if (employee) {
       if (name) {
-        const nameParts = name.trim().split(" ");
-        employee.firstName = nameParts[0] || employee.firstName;
-        employee.lastName = nameParts.slice(1).join(" ") || employee.lastName;
+        employee.name = name;
       }
+
       employee.email = email || employee.email;
       employee.mobile = mobile || employee.mobile;
       employee.role = role || employee.role;
       employee.designation = designation || employee.designation;
 
-      if (permissions) {
-        employee.permissions = { ...employee.permissions, ...permissions };
-      }
+
+
 
       const updatedEmployee = await employee.save();
 
@@ -121,13 +145,14 @@ export const updateEmployee = async (req, res) => {
         "Your Account Details Have Been Updated - TaskFlow",
         "Account Updated",
         `
-        <p>Hello ${updatedEmployee.firstName},</p>
+        <p>Hello ${updatedEmployee.name},</p>
         <p>Your account details have been updated by the administrator. Please review your updated profile in the application.</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Name:</strong> ${updatedEmployee.firstName} ${updatedEmployee.lastName}</p>
+            <p style="margin: 0;"><strong>Name:</strong> ${updatedEmployee.name}</p>
             <p style="margin: 0;"><strong>Designation:</strong> ${updatedEmployee.designation || "Not set"}</p>
             <p style="margin: 0;"><strong>Mobile:</strong> ${updatedEmployee.mobile || "Not set"}</p>
         </div>
+
         `
       );
 
