@@ -1,30 +1,35 @@
 import 'dotenv/config';
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
+import connectDB from './configs/db.js';
+import userRoutes from './routes/userRoutes.js';
+import employeeRoutes from './routes/employeeRoutes.js';
+import groupRoutes from './routes/groupRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 const app = express();
 
-// Middleware
 app.use(express.json());
 app.use(cors());
 
-// Basic Route
+connectDB();
+
+app.use('/api/users', userRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
 app.get('/', (req, res) => {
   res.send('Task Management API is running (ES Modules)...');
 });
 
-// Database Connection
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/task-management';
 
-mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Database connection error:', err);
-  });
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+

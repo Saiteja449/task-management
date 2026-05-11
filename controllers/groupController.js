@@ -1,0 +1,201 @@
+import Group from "../models/groupModel.js";
+import Task from "../models/taskModel.js";
+import User from "../models/userModel.js";
+import { createNotification, notifyMultipleUsers } from "../helpers/notificationHelper.js";
+
+export const createGroup = async (req, res) => {
+  try {
+    const { name, description, members } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        status: false,
+        message: "Group name is required",
+      });
+    }
+
+    const group = await Group.create({
+      name,
+      description,
+      members: members || [],
+      admin: req.userId,
+    });
+
+    if (group) {
+      // Notify members
+      if (members && members.length > 0) {
+        for (const memberId of members) {
+          await createNotification({
+            userId: memberId,
+            adminId: req.userId,
+            title: "Added to Group",
+            message: `You have been added to the new group: "${group.name}".`,
+            type: "group",
+          });
+        }
+      }
+
+      res.status(201).json({
+        status: true,
+        message: "Group created successfully",
+        data: group,
+      });
+
+    } else {
+      res.status(400).json({ status: false, message: "Invalid group data" });
+    }
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const getGroups = async (req, res) => {
+  try {
+    const groups = await Group.find({
+      $or: [{ admin: req.userId }, { members: req.userId }],
+    }).populate("members", "firstName lastName email role avatar");
+
+    res.status(200).json({
+      status: true,
+      message: "Groups fetched successfully",
+      data: groups,
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const updateGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, members } = req.body;
+
+    const group = await Group.findById(id);
+
+    if (group) {
+      // Check if user is the admin of the group
+      if (group.admin.toString() !== req.userId) {
+        return res.status(403).json({
+          status: false,
+          message: "Only the admin who created the group can update it",
+        });
+      }
+
+      const oldMembers = group.members.map(m => m.toString());
+      group.name = name || group.name;
+      group.description = description || group.description;
+      group.members = members || group.members;
+
+      const updatedGroup = await group.save();
+
+      // Notify new members
+      if (members) {
+        const newMembers = members.filter(m => !oldMembers.includes(m.toString()));
+        for (const memberId of newMembers) {
+          await createNotification({
+            userId: memberId,
+            adminId: req.userId,
+            title: "Added to Group",
+            message: `You have been added to the group: "${group.name}".`,
+            type: "group",
+          });
+        }
+      }
+
+      res.status(200).json({
+        status: true,
+        message: "Group updated successfully",
+        data: updatedGroup,
+      });
+    } else {
+      res.status(404).json({ status: false, message: "Group not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const deleteGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const group = await Group.findById(id);
+
+    if (group) {
+      // Check if user is the admin of the group
+      if (group.admin.toString() !== req.userId) {
+        return res.status(403).json({
+          status: false,
+          message: "Only the admin who created the group can delete it",
+        });
+      }
+
+      const groupName = group.name;
+      const memberIds = group.members;
+
+      await Group.findByIdAndDelete(id);
+
+      // Notify members about group deletion
+      await notifyMultipleUsers({
+        userIds: memberIds,
+        adminId: req.userId,
+        title: "Group Deleted",
+        message: `The group "${groupName}" has been deleted.`,
+        type: "group",
+      });
+
+      res.status(200).json({
+        status: true,
+        message: "Group deleted successfully",
+      });
+    } else {
+      res.status(404).json({ status: false, message: "Group not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const getGroupDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const group = await Group.findById(id).populate(
+      "members",
+      "firstName lastName email role avatar"
+    );
+
+    if (!group) {
+      return res.status(404).json({ status: false, message: "Group not found" });
+    }
+
+    const user = await User.findById(req.userId);
+    const adminId = user.role === "Admin" ? user._id : user.adminId;
+
+    if (group.admin.toString() !== adminId.toString()) {
+      const isMember = group.members.some(
+        (m) => m._id.toString() === req.userId
+      );
+      if (!isMember && user.role !== "Admin") {
+        return res
+          .status(403)
+          .json({ status: false, message: "Not authorized to view this group" });
+      }
+    }
+
+    const tasks = await Task.find({ groupId: id })
+      .populate("assignees", "firstName lastName email role avatar")
+      .populate("comments.userId", "firstName lastName avatar");
+
+    res.status(200).json({
+      status: true,
+      message: "Group details fetched successfully",
+      data: {
+        group,
+        tasks,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
