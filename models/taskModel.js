@@ -45,6 +45,11 @@ const taskSchema = mongoose.Schema(
         ref: "User",
       },
     ],
+    taskType: {
+      type: String,
+      enum: ["personal", "employee", "group"],
+      default: "personal",
+    },
     groupId: {
       type: String, // Can be a Group ObjectId or "personal"
       default: "personal",

@@ -6,6 +6,7 @@ import {
   deleteTask,
   addComment,
   getAssignedTasks,
+  getGroupAssignedTasks,
   getTaskDetails,
   updateTaskStatus,
 } from "../controllers/taskController.js";
@@ -20,6 +21,7 @@ router.get("/get-tasks", protect, getTasks);
 router.put("/update-task/:id", protect, updateTask);
 router.delete("/delete-task/:id", protect, deleteTask);
 router.get("/get-assigned-tasks", protect, getAssignedTasks);
+router.get("/get-group-assigned-tasks", protect, getGroupAssignedTasks);
 router.get("/get-task-details/:id", protect, getTaskDetails);
 router.put("/update-status/:id", protect, updateTaskStatus);
 router.post("/add-comment/:id", protect, addComment);

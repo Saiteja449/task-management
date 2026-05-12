@@ -12,7 +12,14 @@ export const getEmployeeDetails = async (req, res) => {
       return res.status(404).json({ status: false, message: "Employee not found" });
     }
 
-    const tasks = await Task.find({ assignees: id })
+    const tasks = await Task.find({
+      assignees: id,
+      $or: [
+        { taskType: { $in: ["employee", "group"] } },
+        { groupId: { $ne: "personal" } },
+        { taskType: { $exists: false }, groupId: "personal", createdBy: req.userId },
+      ],
+    })
       .populate("comments.userId", "name avatar")
       .lean();
 
@@ -199,4 +206,3 @@ export const deleteEmployee = async (req, res) => {
     res.status(500).json({ status: false, message: error.message });
   }
 };
-
