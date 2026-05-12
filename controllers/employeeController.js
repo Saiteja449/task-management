@@ -98,7 +98,14 @@ export const addEmployee = async (req, res) => {
 
 
     if (employee) {
-      await sendEmployeeEmail(email, defaultPassword, name);
+      const adminUser = await User.findById(req.userId);
+      await sendEmployeeEmail(
+        email, 
+        defaultPassword, 
+        name, 
+        adminUser?.name || "Administrator", 
+        adminUser?.businessName || "the"
+      );
 
       res.status(201).json({
         status: true,

@@ -19,6 +19,7 @@ export const createNotification = async ({
   message,
   type = "task",
   sendEmail = true,
+  attachments = [],
 }) => {
   try {
     // 1. Create in-app notification
@@ -34,7 +35,7 @@ export const createNotification = async ({
     if (sendEmail) {
       const user = await User.findById(userId);
       if (user && user.email) {
-        await sendNotificationEmail(user.email, title, title, message);
+        await sendNotificationEmail(user.email, title, title, message, attachments);
       }
     }
   } catch (error) {
@@ -52,10 +53,11 @@ export const notifyMultipleUsers = async ({
   message,
   type = "task",
   sendEmail = true,
+  attachments = [],
 }) => {
   try {
     const promises = userIds.map((userId) =>
-      createNotification({ userId, adminId, title, message, type, sendEmail })
+      createNotification({ userId, adminId, title, message, type, sendEmail, attachments })
     );
     await Promise.all(promises);
   } catch (error) {

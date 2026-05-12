@@ -140,6 +140,7 @@ export const createTask = async (req, res) => {
               title: "New Task Assigned",
               message: `You have been assigned a new task: "${title}". Priority: ${priority || "Medium"}.`,
               type: "task",
+              attachments: task.attachments,
             });
           }
         }
