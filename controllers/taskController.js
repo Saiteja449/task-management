@@ -1,5 +1,6 @@
 import Task from "../models/taskModel.js";
 import User from "../models/userModel.js";
+import Group from "../models/groupModel.js";
 import { createNotification } from "../helpers/notificationHelper.js";
 
 export const createTask = async (req, res) => {
@@ -28,7 +29,9 @@ export const createTask = async (req, res) => {
       reminders,
       recurring,
     } = req.body;
-    const missingFields = requiredFields.filter((field) => req.body[field] === undefined);
+    const missingFields = requiredFields.filter(
+      (field) => req.body[field] === undefined,
+    );
 
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -57,16 +60,27 @@ export const createTask = async (req, res) => {
     });
 
     if (task) {
+      // Notify the creator that the task was successfully created
+      await createNotification({
+        userId: req.userId,
+        adminId,
+        title: "Task Created",
+        message: `Task "${title}" was successfully created. Priority: ${priority || "Medium"}.`,
+        type: "task",
+      });
+
       // Notify assignees
       if (assignees && assignees.length > 0) {
         for (const assigneeId of assignees) {
-          await createNotification({
-            userId: assigneeId,
-            adminId,
-            title: "New Task Assigned",
-            message: `You have been assigned a new task: "${title}". Priority: ${priority || "Medium"}.`,
-            type: "task",
-          });
+          if (assigneeId.toString() !== req.userId.toString()) {
+            await createNotification({
+              userId: assigneeId,
+              adminId,
+              title: "New Task Assigned",
+              message: `You have been assigned a new task: "${title}". Priority: ${priority || "Medium"}.`,
+              type: "task",
+            });
+          }
         }
       }
 
@@ -90,13 +104,33 @@ export const getTasks = async (req, res) => {
 
     const tasks = await Task.find({ adminId })
       .populate("assignees", "name email role avatar")
-      .populate("comments.userId", "name avatar");
+      .populate("comments.userId", "name avatar")
+      .lean();
 
+    // Fetch group names for group tasks
+    const groupIds = [
+      ...new Set(
+        tasks.filter((t) => t.groupId !== "personal").map((t) => t.groupId),
+      ),
+    ];
+    const groups = await Group.find({ _id: { $in: groupIds } }).select("name");
+    const groupMap = groups.reduce(
+      (acc, g) => ({ ...acc, [g._id.toString()]: g.name }),
+      {},
+    );
+
+    const tasksWithGroupInfo = tasks.map((task) => ({
+      ...task,
+      groupName:
+        task.groupId === "personal"
+          ? null
+          : groupMap[task.groupId] || "Deleted Group",
+    }));
 
     res.status(200).json({
       status: true,
       message: "Tasks fetched successfully",
-      data: tasks,
+      data: tasksWithGroupInfo,
     });
   } catch (error) {
     res.status(500).json({ status: false, message: error.message });
@@ -112,10 +146,17 @@ export const updateTask = async (req, res) => {
       const user = await User.findById(req.userId);
       const adminId = user.role === "Admin" ? user._id : user.adminId;
 
-      if (task.adminId.toString() !== adminId.toString()) {
+      // Allow if user is admin of the workspace OR the one who created the task
+      const isAdmin = task.adminId.toString() === adminId?.toString();
+      const isCreator = task.createdBy.toString() === req.userId.toString();
+
+      if (!isAdmin && !isCreator) {
         return res
           .status(403)
-          .json({ status: false, message: "Not authorized" });
+          .json({
+            status: false,
+            message: "Not authorized to update this task",
+          });
       }
 
       const oldStatus = task.status;
@@ -179,10 +220,17 @@ export const deleteTask = async (req, res) => {
       const user = await User.findById(req.userId);
       const adminId = user.role === "Admin" ? user._id : user.adminId;
 
-      if (task.adminId.toString() !== adminId.toString()) {
+      // Allow if user is admin of the workspace OR the one who created the task
+      const isAdmin = task.adminId.toString() === adminId?.toString();
+      const isCreator = task.createdBy.toString() === req.userId.toString();
+
+      if (!isAdmin && !isCreator) {
         return res
           .status(403)
-          .json({ status: false, message: "Not authorized" });
+          .json({
+            status: false,
+            message: "Not authorized to delete this task",
+          });
       }
 
       const title = task.title;
@@ -248,14 +296,12 @@ export const addComment = async (req, res) => {
           message: `${user.name} commented on "${task.title}": "${text.substring(0, 50)}..."`,
           type: "task",
         });
-
       }
 
       const updatedTask = await Task.findById(id).populate(
         "comments.userId",
         "name avatar",
       );
-
 
       res.status(201).json({
         status: true,
@@ -274,15 +320,29 @@ export const getAssignedTasks = async (req, res) => {
   try {
     const tasks = await Task.find({
       assignees: req.userId,
-      groupId: { $ne: "personal" }
+      groupId: { $ne: "personal" },
     })
-    .populate("assignees", "name email role avatar")
-    .populate("comments.userId", "name avatar");
+      .populate("assignees", "name email role avatar")
+      .populate("comments.userId", "name avatar")
+      .lean();
+
+    // Fetch group names for group tasks
+    const groupIds = [...new Set(tasks.map((t) => t.groupId))];
+    const groups = await Group.find({ _id: { $in: groupIds } }).select("name");
+    const groupMap = groups.reduce(
+      (acc, g) => ({ ...acc, [g._id.toString()]: g.name }),
+      {},
+    );
+
+    const tasksWithGroupInfo = tasks.map((task) => ({
+      ...task,
+      groupName: groupMap[task.groupId] || "Deleted Group",
+    }));
 
     res.status(200).json({
       status: true,
       message: "Assigned tasks fetched successfully",
-      data: tasks,
+      data: tasksWithGroupInfo,
     });
   } catch (error) {
     res.status(500).json({ status: false, message: error.message });
@@ -294,10 +354,18 @@ export const getTaskDetails = async (req, res) => {
     const { id } = req.params;
     const task = await Task.findById(id)
       .populate("assignees", "name email role avatar")
-      .populate("comments.userId", "name avatar");
+      .populate("comments.userId", "name avatar")
+      .lean();
 
     if (!task) {
       return res.status(404).json({ status: false, message: "Task not found" });
+    }
+
+    if (task.groupId && task.groupId !== "personal") {
+      const group = await Group.findById(task.groupId).select("name");
+      task.groupName = group ? group.name : "Deleted Group";
+    } else {
+      task.groupName = null;
     }
 
     const user = await User.findById(req.userId);
@@ -305,7 +373,7 @@ export const getTaskDetails = async (req, res) => {
 
     if (task.adminId.toString() !== adminId.toString()) {
       const isAssignee = task.assignees.some(
-        (a) => a._id.toString() === req.userId.toString()
+        (a) => a._id.toString() === req.userId.toString(),
       );
       if (!isAssignee) {
         return res
@@ -340,7 +408,7 @@ export const updateTaskStatus = async (req, res) => {
 
     // Check if admin or assigned employee
     const isAssignee = task.assignees.some(
-      (a) => a.toString() === req.userId.toString()
+      (a) => a.toString() === req.userId.toString(),
     );
     const isAdmin = task.adminId.toString() === adminId.toString();
 
@@ -386,6 +454,3 @@ export const updateTaskStatus = async (req, res) => {
     res.status(500).json({ status: false, message: error.message });
   }
 };
-
-
-

@@ -1,5 +1,6 @@
 import User from "../models/userModel.js";
 import Task from "../models/taskModel.js";
+import Group from "../models/groupModel.js";
 import sendEmployeeEmail, { sendNotificationEmail } from "../helpers/emailHelper.js";
 
 export const getEmployeeDetails = async (req, res) => {
@@ -12,14 +13,25 @@ export const getEmployeeDetails = async (req, res) => {
     }
 
     const tasks = await Task.find({ assignees: id })
-      .populate("comments.userId", "name avatar");
+      .populate("comments.userId", "name avatar")
+      .lean();
+
+    // Fetch group names for group tasks
+    const groupIds = [...new Set(tasks.filter(t => t.groupId !== "personal").map(t => t.groupId))];
+    const groups = await Group.find({ _id: { $in: groupIds } }).select("name");
+    const groupMap = groups.reduce((acc, g) => ({ ...acc, [g._id.toString()]: g.name }), {});
+
+    const tasksWithGroupInfo = tasks.map(task => ({
+      ...task,
+      groupName: task.groupId === "personal" ? null : (groupMap[task.groupId] || "Deleted Group")
+    }));
 
     res.status(200).json({
       status: true,
       message: "Employee details fetched successfully",
       data: {
         employee,
-        tasks,
+        tasks: tasksWithGroupInfo,
       },
     });
   } catch (error) {

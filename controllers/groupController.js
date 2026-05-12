@@ -22,16 +22,27 @@ export const createGroup = async (req, res) => {
     });
 
     if (group) {
-      // Notify members
+      // Notify creator that the group was successfully created
+      await createNotification({
+        userId: req.userId,
+        adminId: req.userId,
+        title: "Group Created",
+        message: `The group "${group.name}" was successfully created.`,
+        type: "group",
+      });
+
+      // Notify other members
       if (members && members.length > 0) {
         for (const memberId of members) {
-          await createNotification({
-            userId: memberId,
-            adminId: req.userId,
-            title: "Added to Group",
-            message: `You have been added to the new group: "${group.name}".`,
-            type: "group",
-          });
+          if (memberId.toString() !== req.userId.toString()) {
+            await createNotification({
+              userId: memberId,
+              adminId: req.userId,
+              title: "Added to Group",
+              message: `You have been added to the new group: "${group.name}".`,
+              type: "group",
+            });
+          }
         }
       }
 
@@ -93,13 +104,15 @@ export const updateGroup = async (req, res) => {
       if (members) {
         const newMembers = members.filter(m => !oldMembers.includes(m.toString()));
         for (const memberId of newMembers) {
-          await createNotification({
-            userId: memberId,
-            adminId: req.userId,
-            title: "Added to Group",
-            message: `You have been added to the group: "${group.name}".`,
-            type: "group",
-          });
+          if (memberId.toString() !== req.userId.toString()) {
+            await createNotification({
+              userId: memberId,
+              adminId: req.userId,
+              title: "Added to Group",
+              message: `You have been added to the group: "${group.name}".`,
+              type: "group",
+            });
+          }
         }
       }
 
