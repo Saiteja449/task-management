@@ -12,11 +12,12 @@ import {
 } from "../controllers/taskController.js";
 
 import { protect, admin } from "../middlewares/authMiddleware.js";
+import upload from "../middlewares/uploadMiddleware.js";
 
 
 const router = express.Router();
 
-router.post("/create-task", protect, createTask);
+router.post("/create-task", protect, upload.array("files", 5), createTask);
 router.get("/get-tasks", protect, getTasks);
 router.put("/update-task/:id", protect, updateTask);
 router.delete("/delete-task/:id", protect, deleteTask);

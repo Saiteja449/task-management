@@ -1,4 +1,5 @@
 import 'dotenv/config';
+// Force restart to apply Mongoose schema changes for attachments
 import express from 'express';
 import cors from 'cors';
 import connectDB from './configs/db.js';

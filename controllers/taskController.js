@@ -2,44 +2,45 @@ import Task from "../models/taskModel.js";
 import User from "../models/userModel.js";
 import Group from "../models/groupModel.js";
 import { createNotification } from "../helpers/notificationHelper.js";
+import { uploadMultipleToCloudinary } from "../helpers/uploadHelper.js";
 
 export const createTask = async (req, res) => {
   try {
-    const requiredFields = [
-      "title",
-      "groupId",
-      "description",
-      "status",
-      "priority",
-      "dueDate",
-      "assignees",
-      "attachments",
-      "reminders",
-      "recurring",
-    ];
     const {
       title,
       description,
       status,
       priority,
       dueDate,
-      assignees = [],
       groupId,
-      attachments,
       reminders,
       recurring,
       taskType,
     } = req.body;
-    const missingFields = requiredFields.filter(
-      (field) => req.body[field] === undefined,
-    );
 
-    if (missingFields.length > 0) {
+    // Parse assignees - comes as JSON string from FormData
+    let assignees = [];
+    if (req.body.assignees) {
+      try {
+        assignees = JSON.parse(req.body.assignees);
+      } catch {
+        assignees = Array.isArray(req.body.assignees)
+          ? req.body.assignees
+          : [req.body.assignees];
+      }
+    }
+
+    if (!title || !dueDate) {
       return res.status(400).json({
         status: false,
-        message: "Missing fields",
-        errors: missingFields,
+        message: "Title and due date are required",
       });
+    }
+
+    // Upload files to Cloudinary if any
+    let attachmentUrls = [];
+    if (req.files && req.files.length > 0) {
+      attachmentUrls = await uploadMultipleToCloudinary(req.files);
     }
 
     const user = await User.findById(req.userId);
@@ -105,7 +106,7 @@ export const createTask = async (req, res) => {
 
     const task = await Task.create({
       title,
-      description,
+      description: description || "",
       status: status || "Pending",
       priority: priority || "Medium",
       dueDate,
@@ -114,8 +115,8 @@ export const createTask = async (req, res) => {
       groupId: normalizedTaskType === "group" ? normalizedGroupId : "personal",
       adminId,
       createdBy: req.userId,
-      attachments: attachments || [],
-      reminders: reminders || false,
+      attachments: attachmentUrls,
+      reminders: reminders === "true" || reminders === true,
       recurring: recurring || "None",
     });
 

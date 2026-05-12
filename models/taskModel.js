@@ -17,6 +17,17 @@ const commentSchema = mongoose.Schema(
   }
 );
 
+const attachmentSchema = mongoose.Schema(
+  {
+    url: String,
+    publicId: String,
+    format: String,
+    type: String,
+    name: String,
+  },
+  { _id: false }
+);
+
 const taskSchema = mongoose.Schema(
   {
     title: {
@@ -65,11 +76,7 @@ const taskSchema = mongoose.Schema(
       required: true,
     },
 
-    attachments: [
-      {
-        type: String,
-      },
-    ],
+    attachments: [attachmentSchema],
     reminders: {
       type: Boolean,
       default: false,
