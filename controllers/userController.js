@@ -184,3 +184,44 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ status: false, message: error.message });
   }
 };
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ status: false, message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (user) {
+      const newPassword = Math.random().toString(36).slice(-10);
+      user.password = newPassword;
+      await user.save();
+
+      await sendNotificationEmail(
+        user.email,
+        "Password Recovery - Task-Management-Infasta",
+        "New Password Generated",
+        `
+        <p>Hello ${user.name},</p>
+        <p>You requested a password reset. A new password has been generated for your account:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Email:</strong> ${user.email}</p>
+            <p style="margin: 0;"><strong>New Password:</strong> ${newPassword}</p>
+        </div>
+        <p>Please log in using these credentials and change your password immediately for security.</p>
+        `,
+      );
+
+      res.status(200).json({
+        status: true,
+        message: "A new password has been sent to your email address.",
+      });
+    } else {
+      res.status(404).json({ status: false, message: "No account found with this email address." });
+    }
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
