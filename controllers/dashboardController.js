@@ -154,8 +154,8 @@ export const generateReport = async (req, res) => {
     const employees = await User.find({ adminId, role: "Employee" }).lean();
 
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = "TaskFlow";
-    workbook.lastModifiedBy = "TaskFlow";
+    workbook.creator = "task-management-infasta";
+    workbook.lastModifiedBy = "task-management-infasta";
     workbook.created = new Date();
 
     // 1. Summary Sheet

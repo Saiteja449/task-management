@@ -10,7 +10,7 @@ import streamifier from "streamifier";
  */
 export const uploadToCloudinary = (
   fileBuffer,
-  folder = "taskflow",
+  folder = "Task-Management-Infasta",
   resourceType = "auto",
   originalName = ""
 ) => {
@@ -61,7 +61,7 @@ const getResourceType = (mimetype) => {
  */
 export const uploadMultipleToCloudinary = async (
   files,
-  folder = "taskflow/attachments",
+  folder = "Task-Management-Infasta/attachments",
 ) => {
   if (!files || files.length === 0) return [];
 

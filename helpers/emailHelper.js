@@ -16,9 +16,9 @@ const sendEmployeeEmail = async (email, password, name, adminName = "Admin", bus
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 
     const mailOptions = {
-      from: `"TaskFlow Admin" <${process.env.SMTP_USER}>`,
+      from: `"Task-Management-Infasta Admin" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: `Join the ${businessName} team on TaskFlow`,
+      subject: `Join the ${businessName} team on Task-Management-Infasta`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -138,11 +138,11 @@ const sendEmployeeEmail = async (email, password, name, adminName = "Admin", bus
             <div class="logo-header">
               <div class="logo-text">
                 <span class="logo-icon"></span>
-                TaskFlow
+                Task-Management-Infasta
               </div>
             </div>
             
-            <h1 class="title">Join the ${businessName} TaskFlow team?</h1>
+            <h1 class="title">Join the ${businessName} Task-Management-Infasta team?</h1>
             
             <div class="card">
               <div class="avatar-container">
@@ -150,7 +150,7 @@ const sendEmployeeEmail = async (email, password, name, adminName = "Admin", bus
               </div>
               <div class="invite-text">${adminName} invited you</div>
               <p class="description">
-                TaskFlow is one app to replace them all - tasks, docs, and team collaboration. 
+                Task-Management-Infasta is one app to replace them all - tasks, docs, and team collaboration. 
                 A new way to work with your team more efficiently.
               </p>
               
@@ -166,7 +166,7 @@ const sendEmployeeEmail = async (email, password, name, adminName = "Admin", bus
             </div>
             
             <div class="footer">
-              Questions? 24/7 Support: (888) 123-4567 | <a href="mailto:support@taskflow.com" style="color: #9ca3af;">help@taskflow.com</a> | <a href="${frontendUrl}" style="color: #9ca3af;">Get a demo</a>
+              Questions? 24/7 Support: (888) 123-4567 | <a href="mailto:support@task-management-infasta.com" style="color: #9ca3af;">help@task-management-infasta.com</a> | <a href="${frontendUrl}" style="color: #9ca3af;">Get a demo</a>
             </div>
           </div>
         </body>
@@ -212,7 +212,7 @@ export const sendNotificationEmail = async (email, subject, title, message, atta
       ` : '';
 
     const mailOptions = {
-      from: `"TaskFlow" <${process.env.SMTP_USER}>`,
+      from: `"Task-Management-Infasta" <${process.env.SMTP_USER}>`,
       to: email,
       subject: subject,
       html: `
@@ -281,7 +281,7 @@ export const sendNotificationEmail = async (email, subject, title, message, atta
             <div class="logo-header">
               <div class="logo-text">
                 <span class="logo-icon"></span>
-                TaskFlow
+                Task-Management-Infasta
               </div>
             </div>
             
@@ -294,7 +294,7 @@ export const sendNotificationEmail = async (email, subject, title, message, atta
             </div>
             
             <div class="footer">
-              This is an automated message from TaskFlow. Please do not reply.<br>
+              This is an automated message from Task-Management-Infasta. Please do not reply.<br>
               <a href="${frontendUrl}" style="color: #9ca3af; text-decoration: underline;">Visit Workspace</a>
             </div>
           </div>

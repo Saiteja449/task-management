@@ -168,7 +168,7 @@ export const updateEmployee = async (req, res) => {
       // Send update notification email
       await sendNotificationEmail(
         updatedEmployee.email,
-        "Your Account Details Have Been Updated - TaskFlow",
+        "Your Account Details Have Been Updated - Task-Management-Infasta",
         "Account Updated",
         `
         <p>Hello ${updatedEmployee.name},</p>

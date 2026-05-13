@@ -63,8 +63,8 @@ export const signupUser = async (req, res) => {
       // Send Welcome Email
       await sendNotificationEmail(
         user.email,
-        "Welcome to TaskFlow!",
-        `Welcome to TaskFlow, ${user.name}!`,
+        "Welcome to Task-Management-Infasta!",
+        `Welcome to Task-Management-Infasta, ${user.name}!`,
 
         `<p>We're excited to have you on board. Your account for <strong>${user.businessName}</strong> has been successfully created.</p>
          <p>You can now start managing your tasks and employees.</p>`,
@@ -158,7 +158,7 @@ export const resetPassword = async (req, res) => {
       await user.save();
       await sendNotificationEmail(
         user.email,
-        "Your Password Has Been Reset - TaskFlow",
+        "Your Password Has Been Reset - Task-Management-Infasta",
         "Password Reset Successful",
         `
         <p>Hello ${user.name},</p>
