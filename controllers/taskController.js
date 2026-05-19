@@ -50,10 +50,21 @@ export const createTask = async (req, res) => {
       taskType || (normalizedGroupId === "personal" ? "personal" : "group");
 
     if (normalizedTaskType !== "personal" && user.role !== "Admin") {
-      return res.status(403).json({
-        status: false,
-        message: "Only admins can assign tasks to employees or groups",
-      });
+      if (normalizedTaskType === "group") {
+        // Employee can create group task if they are part of the group
+        const groupCheck = await Group.findOne({ _id: normalizedGroupId, members: user._id });
+        if (!groupCheck) {
+          return res.status(403).json({
+            status: false,
+            message: "You are not a member of this group",
+          });
+        }
+      } else {
+        return res.status(403).json({
+          status: false,
+          message: "Only admins can assign tasks to employees or groups",
+        });
+      }
     }
 
     let resolvedAssignees = assignees;
@@ -90,7 +101,7 @@ export const createTask = async (req, res) => {
       const group = await Group.findOne({
         _id: normalizedGroupId,
         admin: adminId,
-      }).select("members");
+      }).select("members admin");
 
       if (!group) {
         return res.status(404).json({
@@ -99,9 +110,13 @@ export const createTask = async (req, res) => {
         });
       }
 
-      resolvedAssignees = group.members.filter(
-        (memberId) => memberId.toString() !== adminId.toString(),
-      );
+      // Assign to all group members and the admin
+      resolvedAssignees = [
+        ...group.members.map((id) => id.toString()),
+        adminId.toString(),
+      ];
+      // Ensure unique assignees
+      resolvedAssignees = [...new Set(resolvedAssignees)];
     }
 
     const task = await Task.create({
