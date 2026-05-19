@@ -13,7 +13,7 @@ const sendEmployeeEmail = async (email, password, name, adminName = "Admin", bus
     });
 
     const initials = adminName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app";
 
     const mailOptions = {
       from: `"Task-Management-Infasta Admin" <${process.env.SMTP_USER}>`,
