@@ -195,9 +195,9 @@ export const sendNotificationEmail = async (email, subject, title, message, atta
       },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app";
 
-    const attachmentsHtml = attachments && attachments.length > 0 
+    const attachmentsHtml = attachments && attachments.length > 0
       ? `
         <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
           <p style="font-size: 14px; font-weight: 600; color: #1a1c21; margin-bottom: 12px;">📎 Attachments:</p>
@@ -291,11 +291,6 @@ export const sendNotificationEmail = async (email, subject, title, message, atta
                 ${message}
               </div>
               ${attachmentsHtml}
-            </div>
-            
-            <div class="footer">
-              This is an automated message from Task-Management-Infasta. Please do not reply.<br>
-              <a href="${frontendUrl}" style="color: #9ca3af; text-decoration: underline;">Visit Workspace</a>
             </div>
           </div>
         </body>
