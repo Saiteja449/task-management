@@ -61,6 +61,10 @@ const taskSchema = mongoose.Schema(
       enum: ["personal", "employee", "group"],
       default: "personal",
     },
+    section: {
+      type: String,
+      default: "General",
+    },
     groupId: {
       type: String, // Can be a Group ObjectId or "personal"
       default: "personal",

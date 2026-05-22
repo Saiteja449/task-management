@@ -20,6 +20,11 @@ const groupSchema = mongoose.Schema(
       ref: "User",
       required: true,
     },
+    sections: [
+      {
+        type: String,
+      },
+    ],
   },
   {
     timestamps: true,

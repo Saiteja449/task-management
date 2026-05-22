@@ -16,6 +16,7 @@ export const createTask = async (req, res) => {
       reminders,
       recurring,
       taskType,
+      section,
     } = req.body;
 
     // Parse assignees - comes as JSON string from FormData
@@ -97,11 +98,10 @@ export const createTask = async (req, res) => {
       resolvedAssignees = employees.map((employee) => employee._id);
     }
 
+    let taskAdminId = adminId;
+
     if (normalizedTaskType === "group") {
-      const group = await Group.findOne({
-        _id: normalizedGroupId,
-        admin: adminId,
-      }).select("members admin");
+      const group = await Group.findById(normalizedGroupId).select("members admin sections");
 
       if (!group) {
         return res.status(404).json({
@@ -110,13 +110,26 @@ export const createTask = async (req, res) => {
         });
       }
 
+      taskAdminId = group.admin;
+
       // Assign to all group members and the admin
       resolvedAssignees = [
         ...group.members.map((id) => id.toString()),
-        adminId.toString(),
+        group.admin.toString(),
       ];
       // Ensure unique assignees
       resolvedAssignees = [...new Set(resolvedAssignees)];
+      
+      // Handle subgroup/section logic
+      if (section && section.trim() !== "") {
+        const sectionName = section.trim();
+        // If the section is not already in the group's sections array, add it
+        if (!group.sections || !group.sections.includes(sectionName)) {
+          await Group.findByIdAndUpdate(normalizedGroupId, {
+            $addToSet: { sections: sectionName }
+          });
+        }
+      }
     }
 
     const task = await Task.create({
@@ -128,7 +141,8 @@ export const createTask = async (req, res) => {
       assignees: resolvedAssignees,
       taskType: normalizedTaskType,
       groupId: normalizedTaskType === "group" ? normalizedGroupId : "personal",
-      adminId,
+      section: normalizedTaskType === "group" && section ? section.trim() : "General",
+      adminId: taskAdminId,
       createdBy: req.userId,
       attachments: attachmentUrls,
       reminders: reminders === "true" || reminders === true,
@@ -139,7 +153,7 @@ export const createTask = async (req, res) => {
       // Notify the creator that the task was successfully created
       await createNotification({
         userId: req.userId,
-        adminId,
+        adminId: taskAdminId,
         title: "Task Created",
         message: `Task "${title}" was successfully created. Priority: ${priority || "Medium"}.`,
         type: "task",
@@ -151,7 +165,7 @@ export const createTask = async (req, res) => {
           if (assigneeId.toString() !== req.userId.toString()) {
             await createNotification({
               userId: assigneeId,
-              adminId,
+              adminId: taskAdminId,
               title: "New Task Assigned",
               message: `You have been assigned a new task: "${title}". Priority: ${priority || "Medium"}.`,
               type: "task",
