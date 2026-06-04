@@ -53,7 +53,10 @@ export const createTask = async (req, res) => {
     if (normalizedTaskType !== "personal" && user.role !== "Admin") {
       if (normalizedTaskType === "group") {
         // Employee can create group task if they are part of the group
-        const groupCheck = await Group.findOne({ _id: normalizedGroupId, members: user._id });
+        const groupCheck = await Group.findOne({
+          _id: normalizedGroupId,
+          members: user._id,
+        });
         if (!groupCheck) {
           return res.status(403).json({
             status: false,
@@ -101,7 +104,9 @@ export const createTask = async (req, res) => {
     let taskAdminId = adminId;
 
     if (normalizedTaskType === "group") {
-      const group = await Group.findById(normalizedGroupId).select("members admin sections");
+      const group = await Group.findById(normalizedGroupId).select(
+        "members admin sections",
+      );
 
       if (!group) {
         return res.status(404).json({
@@ -119,14 +124,14 @@ export const createTask = async (req, res) => {
       ];
       // Ensure unique assignees
       resolvedAssignees = [...new Set(resolvedAssignees)];
-      
+
       // Handle subgroup/section logic
       if (section && section.trim() !== "") {
         const sectionName = section.trim();
         // If the section is not already in the group's sections array, add it
         if (!group.sections || !group.sections.includes(sectionName)) {
           await Group.findByIdAndUpdate(normalizedGroupId, {
-            $addToSet: { sections: sectionName }
+            $addToSet: { sections: sectionName },
           });
         }
       }
@@ -141,7 +146,7 @@ export const createTask = async (req, res) => {
       assignees: resolvedAssignees,
       taskType: normalizedTaskType,
       groupId: normalizedTaskType === "group" ? normalizedGroupId : "personal",
-      section: normalizedTaskType === "group" && section ? section.trim() : "General",
+      section: section ? section.trim() : "General",
       adminId: taskAdminId,
       createdBy: req.userId,
       attachments: attachmentUrls,
@@ -263,50 +268,75 @@ export const updateTask = async (req, res) => {
       const isCreator = task.createdBy.toString() === req.userId.toString();
 
       if (!isAdmin && !isCreator) {
-        return res
-          .status(403)
-          .json({
-            status: false,
-            message: "Not authorized to update this task",
-          });
+        return res.status(403).json({
+          status: false,
+          message: "Not authorized to update this task",
+        });
       }
 
       const oldStatus = task.status;
       Object.assign(task, req.body);
       const updatedTask = await task.save();
 
+      const isPersonalTask = task.taskType === "personal" || (!task.taskType && task.groupId === "personal");
+
       // Notify if status changed
       if (req.body.status && req.body.status !== oldStatus) {
-        // Notify admin
-        await createNotification({
-          userId: adminId,
-          adminId,
-          title: "Task Status Updated",
-          message: `The task "${task.title}" status has been updated to "${req.body.status}" by ${user.name}.`,
-
-          type: "task",
-        });
-
-        // Notify assignees
-        for (const assigneeId of task.assignees) {
+        if (isPersonalTask) {
           await createNotification({
-            userId: assigneeId,
+            userId: req.userId,
             adminId,
-            title: "Task Status Updated",
-            message: `Your task "${task.title}" status has been updated to "${req.body.status}".`,
+            title: "Personal Task Updated",
+            message: `Your personal task "${task.title}" status has been updated to "${req.body.status}".`,
             type: "task",
           });
+        } else {
+          // Notify admin
+          if (adminId.toString() !== req.userId.toString()) {
+            await createNotification({
+              userId: adminId,
+              adminId,
+              title: "Task Status Updated",
+              message: `The task "${task.title}" status has been updated to "${req.body.status}" by ${user.name}.`,
+              type: "task",
+            });
+          }
+
+          // Notify assignees
+          for (const assigneeId of task.assignees) {
+            if (assigneeId.toString() !== req.userId.toString()) {
+              await createNotification({
+                userId: assigneeId,
+                adminId,
+                title: "Task Status Updated",
+                message: `Your task "${task.title}" status has been updated to "${req.body.status}".`,
+                type: "task",
+              });
+            }
+          }
         }
       } else {
         // Notify general update
-        for (const assigneeId of task.assignees) {
+        if (isPersonalTask) {
           await createNotification({
-            userId: assigneeId,
+            userId: req.userId,
             adminId,
-            title: "Task Updated",
-            message: `The task "${task.title}" has been updated. Please check for details.`,
+            title: "Personal Task Updated",
+            message: `Your personal task "${task.title}" has been updated.`,
             type: "task",
           });
+        } else {
+          for (const assigneeId of task.assignees) {
+            if (assigneeId.toString() !== req.userId.toString()) {
+              await createNotification({
+                userId: assigneeId,
+                adminId,
+                title: "Task Updated",
+                message: `The task "${task.title}" has been updated. Please check for details.`,
+                type: "task",
+              });
+            }
+          }
         }
       }
 
@@ -344,12 +374,10 @@ export const deleteTask = async (req, res) => {
       const isCreator = task.createdBy.toString() === req.userId.toString();
 
       if (!isAdmin && !isCreator) {
-        return res
-          .status(403)
-          .json({
-            status: false,
-            message: "Not authorized to delete this task",
-          });
+        return res.status(403).json({
+          status: false,
+          message: "Not authorized to delete this task",
+        });
       }
 
       const title = task.title;
@@ -411,7 +439,9 @@ export const addComment = async (req, res) => {
       const isCreator = task.createdBy.toString() === req.userId.toString();
 
       if (!isWorkspaceAdmin && !isAssignee && !isCreator) {
-        return res.status(403).json({ status: false, message: "Not authorized" });
+        return res
+          .status(403)
+          .json({ status: false, message: "Not authorized" });
       }
 
       task.comments.push({
@@ -628,27 +658,41 @@ export const updateTaskStatus = async (req, res) => {
     task.status = status;
     const updatedTask = await task.save();
 
+    const isPersonalTask = task.taskType === "personal" || (!task.taskType && task.groupId === "personal");
+
     // Notify if status changed
     if (status !== oldStatus) {
-      // Notify admin
-      await createNotification({
-        userId: task.adminId,
-        adminId: task.adminId,
-        title: "Task Status Updated",
-        message: `The task "${task.title}" status has been updated to "${status}" by ${user.name}.`,
-        type: "task",
-      });
-
-      // Notify other assignees
-      for (const assigneeId of task.assignees) {
-        if (assigneeId.toString() !== req.userId.toString()) {
+      if (isPersonalTask) {
+        await createNotification({
+          userId: req.userId,
+          adminId: task.adminId,
+          title: "Personal Task Status Updated",
+          message: `Your personal task "${task.title}" status has been updated to "${status}".`,
+          type: "task",
+        });
+      } else {
+        // Notify admin
+        if (task.adminId.toString() !== req.userId.toString()) {
           await createNotification({
-            userId: assigneeId,
+            userId: task.adminId,
             adminId: task.adminId,
             title: "Task Status Updated",
-            message: `The status of task "${task.title}" has been updated to "${status}".`,
+            message: `The task "${task.title}" status has been updated to "${status}" by ${user.name}.`,
             type: "task",
           });
+        }
+
+        // Notify other assignees
+        for (const assigneeId of task.assignees) {
+          if (assigneeId.toString() !== req.userId.toString()) {
+            await createNotification({
+              userId: assigneeId,
+              adminId: task.adminId,
+              title: "Task Status Updated",
+              message: `The status of task "${task.title}" has been updated to "${status}".`,
+              type: "task",
+            });
+          }
         }
       }
     }
