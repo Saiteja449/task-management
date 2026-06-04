@@ -13,7 +13,7 @@ const router = express.Router();
 router.post("/create-group", protect, admin, createGroup);
 router.get("/get-groups", protect, getGroups);
 router.get("/get-group-details/:id", protect, getGroupDetails);
-router.put("/update-group/:id", protect, admin, updateGroup);
+router.put("/update-group/:id", protect, updateGroup);
 router.delete("/delete-group/:id", protect, admin, deleteGroup);
 
 

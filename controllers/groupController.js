@@ -80,23 +80,38 @@ export const getGroups = async (req, res) => {
 export const updateGroup = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, members } = req.body;
+    const { name, description, members, sections } = req.body;
 
     const group = await Group.findById(id);
 
     if (group) {
-      // Check if user is the admin of the group
-      if (group.admin.toString() !== req.userId) {
-        return res.status(403).json({
-          status: false,
-          message: "Only the admin who created the group can update it",
-        });
+      const user = await User.findById(req.userId);
+      const isGroupAdmin = group.admin.toString() === req.userId;
+      const isAdminRole = user?.role === "Admin";
+      const isMember = group.members.some(m => m.toString() === req.userId);
+
+      if (!isGroupAdmin && !isAdminRole) {
+        if (!isMember) {
+          return res.status(403).json({
+            status: false,
+            message: "Not authorized to update this group",
+          });
+        }
+        
+        // Employee members can only update sections
+        if (name || description || members) {
+          return res.status(403).json({
+            status: false,
+            message: "Employees can only modify group categories",
+          });
+        }
       }
 
       const oldMembers = group.members.map(m => m.toString());
-      group.name = name || group.name;
-      group.description = description || group.description;
-      group.members = members || group.members;
+      if (name) group.name = name;
+      if (description !== undefined) group.description = description;
+      if (members) group.members = members;
+      if (sections) group.sections = sections;
 
       const updatedGroup = await group.save();
 
