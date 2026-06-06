@@ -19,7 +19,7 @@ const router = express.Router();
 
 router.post("/create-task", protect, upload.array("files", 5), createTask);
 router.get("/get-tasks", protect, getTasks);
-router.put("/update-task/:id", protect, updateTask);
+router.put("/update-task/:id", protect, upload.array("files", 5), updateTask);
 router.delete("/delete-task/:id", protect, deleteTask);
 router.get("/get-assigned-tasks", protect, getAssignedTasks);
 router.get("/get-group-assigned-tasks", protect, getGroupAssignedTasks);

@@ -18,6 +18,7 @@ export const createGroup = async (req, res) => {
       name,
       description,
       members: members || [],
+      sections: req.body.sections || ["General"],
       admin: req.userId,
     });
 

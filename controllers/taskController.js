@@ -274,8 +274,56 @@ export const updateTask = async (req, res) => {
         });
       }
 
+      // Handle files upload
+      let attachmentUrls = [];
+      if (req.files && req.files.length > 0) {
+        attachmentUrls = await uploadMultipleToCloudinary(req.files);
+      }
+
+      // Parse assignees if sent as a string
+      let parsedAssignees = req.body.assignees;
+      if (parsedAssignees && typeof parsedAssignees === 'string') {
+        try {
+          parsedAssignees = JSON.parse(parsedAssignees);
+        } catch {
+          parsedAssignees = [parsedAssignees];
+        }
+      }
+      if (parsedAssignees) {
+        req.body.assignees = parsedAssignees;
+      }
+
+      // Automatically handle group and section logic if provided
+      if (req.body.taskType === "group" && req.body.groupId && req.body.groupId !== "personal") {
+        const group = await Group.findById(req.body.groupId);
+        if (group) {
+          req.body.adminId = group.admin;
+          // Ensure assignees are all group members + admin
+          req.body.assignees = [...new Set([...group.members.map(id => id.toString()), group.admin.toString()])];
+          
+          if (req.body.section && req.body.section.trim() !== "") {
+            const sectionName = req.body.section.trim();
+            if (!group.sections || !group.sections.includes(sectionName)) {
+              await Group.findByIdAndUpdate(req.body.groupId, {
+                $addToSet: { sections: sectionName },
+              });
+            }
+          }
+        }
+      } else if (req.body.taskType === "personal") {
+        req.body.assignees = [req.userId];
+        req.body.groupId = "personal";
+      } else if (req.body.taskType === "employee") {
+        req.body.groupId = "personal";
+      }
+
       const oldStatus = task.status;
       Object.assign(task, req.body);
+      
+      if (attachmentUrls.length > 0) {
+        task.attachments = [...(task.attachments || []), ...attachmentUrls];
+      }
+
       const updatedTask = await task.save();
 
       const isPersonalTask = task.taskType === "personal" || (!task.taskType && task.groupId === "personal");
