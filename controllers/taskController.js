@@ -486,7 +486,15 @@ export const addComment = async (req, res) => {
       );
       const isCreator = task.createdBy.toString() === req.userId.toString();
 
-      if (!isWorkspaceAdmin && !isAssignee && !isCreator) {
+      let isGroupMember = false;
+      if (task.groupId && task.groupId !== "personal") {
+        const group = await Group.findById(task.groupId).select("members");
+        if (group && group.members && group.members.some(m => m.toString() === req.userId.toString())) {
+          isGroupMember = true;
+        }
+      }
+
+      if (!isWorkspaceAdmin && !isAssignee && !isCreator && !isGroupMember) {
         return res
           .status(403)
           .json({ status: false, message: "Not authorized" });
@@ -638,9 +646,14 @@ export const getTaskDetails = async (req, res) => {
       return res.status(404).json({ status: false, message: "Task not found" });
     }
 
+    let isGroupMember = false;
+
     if (task.groupId && task.groupId !== "personal") {
-      const group = await Group.findById(task.groupId).select("name");
+      const group = await Group.findById(task.groupId).select("name members");
       task.groupName = group ? group.name : "Deleted Group";
+      if (group && group.members && group.members.some(m => m.toString() === req.userId.toString())) {
+        isGroupMember = true;
+      }
     } else {
       task.groupName = null;
     }
@@ -656,10 +669,10 @@ export const getTaskDetails = async (req, res) => {
       !isPrivatePersonalTask;
     const isCreator = task.createdBy.toString() === req.userId.toString();
     const isAssignee = task.assignees.some(
-      (a) => a._id.toString() === req.userId.toString(),
+      (a) => a && a._id && a._id.toString() === req.userId.toString(),
     );
 
-    if (!isWorkspaceAdmin && !isCreator && !isAssignee) {
+    if (!isWorkspaceAdmin && !isCreator && !isAssignee && !isGroupMember) {
       return res.status(403).json({ status: false, message: "Not authorized" });
     }
 
@@ -698,7 +711,15 @@ export const updateTaskStatus = async (req, res) => {
       task.adminId.toString() === user._id.toString() &&
       !isPrivatePersonalTask;
 
-    if (!isAdmin && !isAssignee) {
+    let isGroupMember = false;
+    if (task.groupId && task.groupId !== "personal") {
+      const group = await Group.findById(task.groupId).select("members");
+      if (group && group.members && group.members.some(m => m.toString() === req.userId.toString())) {
+        isGroupMember = true;
+      }
+    }
+
+    if (!isAdmin && !isAssignee && !isGroupMember) {
       return res.status(403).json({ status: false, message: "Not authorized" });
     }
 
