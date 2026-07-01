@@ -9,6 +9,7 @@ import User from "../models/userModel.js";
  * @param {string} params.adminId - Workspace Admin ID
  * @param {string} params.title - Notification Title
  * @param {string} params.message - Notification Message
+ * @param {string} params.emailMessage - HTML Email Message (optional, defaults to message)
  * @param {string} params.type - Notification Type (task, group, system)
  * @param {boolean} params.sendEmail - Whether to send an email notification
  */
@@ -17,6 +18,7 @@ export const createNotification = async ({
   adminId,
   title,
   message,
+  emailMessage,
   type = "task",
   sendEmail = true,
   attachments = [],
@@ -35,7 +37,7 @@ export const createNotification = async ({
     if (sendEmail) {
       const user = await User.findById(userId);
       if (user && user.email) {
-        await sendNotificationEmail(user.email, title, title, message, attachments);
+        await sendNotificationEmail(user.email, title, title, emailMessage || message, attachments);
       }
     }
   } catch (error) {
@@ -51,13 +53,14 @@ export const notifyMultipleUsers = async ({
   adminId,
   title,
   message,
+  emailMessage,
   type = "task",
   sendEmail = true,
   attachments = [],
 }) => {
   try {
     const promises = userIds.map((userId) =>
-      createNotification({ userId, adminId, title, message, type, sendEmail, attachments })
+      createNotification({ userId, adminId, title, message, emailMessage, type, sendEmail, attachments })
     );
     await Promise.all(promises);
   } catch (error) {

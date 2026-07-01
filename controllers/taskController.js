@@ -160,8 +160,52 @@ export const createTask = async (req, res) => {
       await createNotification({
         userId: req.userId,
         adminId: taskAdminId,
-        title: "Task Created",
+        title: "✅ Task Created Successfully",
         message: `Task "${title}" was successfully created. Priority: ${priority || "Medium"}.`,
+        emailMessage: `
+    <p>Hello,</p>
+
+    <p>Your task has been created successfully in <strong>Task-Management-Infasta</strong>.</p>
+
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:25px 0;">
+      <h3 style="margin-top:0;">📋 Task Details</h3>
+
+      <table style="width:100%;">
+        <tr>
+          <td><strong>Task</strong></td>
+          <td>${title}</td>
+        </tr>
+
+        <tr>
+          <td><strong>Priority</strong></td>
+          <td>${priority || "Medium"}</td>
+        </tr>
+
+        <tr>
+          <td><strong>Status</strong></td>
+          <td>${status || "Pending"}</td>
+        </tr>
+
+        <tr>
+          <td><strong>Due Date</strong></td>
+          <td>${new Date(dueDate).toLocaleDateString()}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p>You can now monitor progress and collaborate with your team.</p>
+
+    <div style="text-align:center;margin-top:30px;">
+      <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login"
+      style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">
+      View Task
+      </a>
+    </div>
+
+    <br>
+
+    <p>Thank you,<br><strong>Task-Management-Infasta Team</strong></p>
+  `,
         type: "task",
       });
 
@@ -174,6 +218,95 @@ export const createTask = async (req, res) => {
               adminId: taskAdminId,
               title: "New Task Assigned",
               message: `You have been assigned a new task: "${title}". Priority: ${priority || "Medium"}.`,
+              emailMessage: `
+<p>Hello,</p>
+
+<p>You have been assigned a new task in <strong>Task-Management-Infasta</strong>.</p>
+
+<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:25px 0;">
+
+<h3 style="margin-top:0;">📝 Task Information</h3>
+
+<table style="width:100%;">
+
+<tr>
+<td><strong>Task</strong></td>
+<td>${title}</td>
+</tr>
+
+<tr>
+<td><strong>Description</strong></td>
+<td>${description || "No description provided."}</td>
+</tr>
+
+<tr>
+<td><strong>Priority</strong></td>
+<td>${priority || "Medium"}</td>
+</tr>
+
+<tr>
+<td><strong>Status</strong></td>
+<td>${status || "Pending"}</td>
+</tr>
+
+<tr>
+<td><strong>Due Date</strong></td>
+<td>${new Date(dueDate).toLocaleDateString()}</td>
+</tr>
+
+<tr>
+<td><strong>Task Type</strong></td>
+<td>${normalizedTaskType}</td>
+</tr>
+
+${
+  section
+    ? `
+<tr>
+<td><strong>Section</strong></td>
+<td>${section}</td>
+</tr>
+`
+    : ""
+}
+
+</table>
+
+</div>
+
+<div style="background:#eef2ff;border-left:4px solid #7c3aed;padding:16px;border-radius:6px;">
+
+<strong>Action Required</strong>
+
+<ul style="margin-top:10px;line-height:1.8;">
+<li>Review the task details.</li>
+<li>Begin work as soon as possible.</li>
+<li>Update the task status regularly.</li>
+<li>Complete it before the due date.</li>
+</ul>
+
+</div>
+
+<div style="text-align:center;margin-top:30px;">
+
+<a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login"
+style="
+background:#7c3aed;
+color:#fff;
+padding:14px 28px;
+border-radius:8px;
+text-decoration:none;
+font-weight:bold;">
+Open Task
+</a>
+
+</div>
+
+<br>
+
+<p>Best Regards,<br>
+<strong>Task-Management-Infasta Team</strong></p>
+`,
               type: "task",
               attachments: task.attachments,
             });
@@ -348,6 +481,17 @@ export const updateTask = async (req, res) => {
             adminId,
             title: "Personal Task Updated",
             message: `Your personal task "${task.title}" status has been updated to "${req.body.status}".`,
+            emailMessage: `
+<p>Hello,</p>
+<p>Your personal task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>New Status:</strong> ${req.body.status}</p>
+<p>You can view the details in the Task Management System.</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
             type: "task",
           });
         } else {
@@ -358,6 +502,17 @@ export const updateTask = async (req, res) => {
               adminId,
               title: "Task Status Updated",
               message: `The task "${task.title}" status has been updated to "${req.body.status}" by ${user.name}.`,
+              emailMessage: `
+<p>Hello,</p>
+<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>New Status:</strong> ${req.body.status}</p>
+<p><strong>Updated By:</strong> ${user.name}</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
               type: "task",
             });
           }
@@ -370,6 +525,17 @@ export const updateTask = async (req, res) => {
                 adminId,
                 title: "Task Status Updated",
                 message: `Your task "${task.title}" status has been updated to "${req.body.status}".`,
+                emailMessage: `
+<p>Hello,</p>
+<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>New Status:</strong> ${req.body.status}</p>
+<p><strong>Updated By:</strong> ${user.name}</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
                 type: "task",
               });
             }
@@ -383,6 +549,15 @@ export const updateTask = async (req, res) => {
             adminId,
             title: "Personal Task Updated",
             message: `Your personal task "${task.title}" has been updated.`,
+            emailMessage: `
+<p>Hello,</p>
+<p>Your personal task <strong>"${task.title}"</strong> has been updated.</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
             type: "task",
           });
         } else {
@@ -393,6 +568,17 @@ export const updateTask = async (req, res) => {
                 adminId,
                 title: "Task Updated",
                 message: `The task "${task.title}" has been updated. Please check for details.`,
+                emailMessage: `
+<p>Hello,</p>
+<p>The task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>Updated By:</strong> ${user.name}</p>
+<p>Please log in to view the changes.</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
                 type: "task",
               });
             }
@@ -453,6 +639,14 @@ export const deleteTask = async (req, res) => {
           adminId: adminIdValue,
           title: "Task Deleted",
           message: `The task "${title}" has been deleted.`,
+          emailMessage: `
+<p>Hello,</p>
+<p>The task <strong>"${title}"</strong> has been deleted.</p>
+<p><strong>Deleted By:</strong> ${user.name}</p>
+<p>If you have any questions, please contact the administrator.</p>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
           type: "task",
         });
       }
@@ -531,6 +725,21 @@ export const addComment = async (req, res) => {
           adminId,
           title: "New Comment on Task",
           message: `${user.name} commented on "${task.title}": "${text.substring(0, 50)}..."`,
+          emailMessage: `
+<p>Hello,</p>
+<p>A new comment was added to the task <strong>"${task.title}"</strong>.</p>
+<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:25px 0;">
+  <p style="margin:0;"><strong>${user.name}</strong> wrote:</p>
+  <blockquote style="margin:10px 0 0;padding-left:15px;border-left:4px solid #7c3aed;color:#4b5563;">
+    ${text}
+  </blockquote>
+</div>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
           type: "task",
         });
       }
@@ -763,6 +972,16 @@ export const updateTaskStatus = async (req, res) => {
           adminId: task.adminId,
           title: "Personal Task Status Updated",
           message: `Your personal task "${task.title}" status has been updated to "${status}".`,
+          emailMessage: `
+<p>Hello,</p>
+<p>Your personal task <strong>"${task.title}"</strong> status has been updated.</p>
+<p><strong>New Status:</strong> ${status}</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
           type: "task",
         });
       } else {
@@ -773,6 +992,17 @@ export const updateTaskStatus = async (req, res) => {
             adminId: task.adminId,
             title: "Task Status Updated",
             message: `The task "${task.title}" status has been updated to "${status}" by ${user.name}.`,
+            emailMessage: `
+<p>Hello,</p>
+<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>New Status:</strong> ${status}</p>
+<p><strong>Updated By:</strong> ${user.name}</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
             type: "task",
           });
         }
@@ -785,6 +1015,17 @@ export const updateTaskStatus = async (req, res) => {
               adminId: task.adminId,
               title: "Task Status Updated",
               message: `The status of task "${task.title}" has been updated to "${status}".`,
+              emailMessage: `
+<p>Hello,</p>
+<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>New Status:</strong> ${status}</p>
+<p><strong>Updated By:</strong> ${user.name}</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
               type: "task",
             });
           }

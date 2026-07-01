@@ -32,6 +32,15 @@ export const createGroup = async (req, res) => {
         adminId: req.userId,
         title: "Group Created",
         message: `The group "${group.name}" was successfully created.`,
+        emailMessage: `
+<p>Hello,</p>
+<p>The group <strong>"${group.name}"</strong> was successfully created.</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">Go to Workspace</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
         type: "group",
       });
 
@@ -44,6 +53,15 @@ export const createGroup = async (req, res) => {
               adminId: req.userId,
               title: "Added to Group",
               message: `You have been added to the new group: "${group.name}".`,
+              emailMessage: `
+<p>Hello,</p>
+<p>You have been added to the new group <strong>"${group.name}"</strong>.</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Group</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
               type: "group",
             });
           }
@@ -129,6 +147,15 @@ export const updateGroup = async (req, res) => {
               adminId: req.userId,
               title: "Added to Group",
               message: `You have been added to the group: "${group.name}".`,
+              emailMessage: `
+<p>Hello,</p>
+<p>You have been added to the group <strong>"${group.name}"</strong>.</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Group</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
               type: "group",
             });
           }
@@ -173,6 +200,13 @@ export const deleteGroup = async (req, res) => {
         adminId: req.userId,
         title: "Group Deleted",
         message: `The group "${groupName}" has been deleted.`,
+        emailMessage: `
+<p>Hello,</p>
+<p>The group <strong>"${groupName}"</strong> has been deleted.</p>
+<p>If you have any questions, please contact the administrator.</p>
+<br>
+<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+`,
         type: "group",
       });
 
