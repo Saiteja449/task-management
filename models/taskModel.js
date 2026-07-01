@@ -14,7 +14,7 @@ const commentSchema = mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const attachmentSchema = mongoose.Schema(
@@ -25,7 +25,7 @@ const attachmentSchema = mongoose.Schema(
     type: String,
     name: String,
   },
-  { _id: false }
+  { _id: false },
 );
 
 const taskSchema = mongoose.Schema(
@@ -85,6 +85,10 @@ const taskSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    deadlineReminderSent: {
+      type: Boolean,
+      default: false,
+    },
     recurring: {
       type: String,
       enum: ["None", "Daily", "Weekly", "Monthly"],
@@ -94,7 +98,7 @@ const taskSchema = mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const Task = mongoose.model("Task", taskSchema);

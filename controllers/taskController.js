@@ -3,6 +3,7 @@ import User from "../models/userModel.js";
 import Group from "../models/groupModel.js";
 import { createNotification } from "../helpers/notificationHelper.js";
 import { uploadMultipleToCloudinary } from "../helpers/uploadHelper.js";
+import { sendNotificationEmail } from "../helpers/emailHelper.js";
 
 export const createTask = async (req, res) => {
   try {
@@ -282,7 +283,7 @@ export const updateTask = async (req, res) => {
 
       // Parse assignees if sent as a string
       let parsedAssignees = req.body.assignees;
-      if (parsedAssignees && typeof parsedAssignees === 'string') {
+      if (parsedAssignees && typeof parsedAssignees === "string") {
         try {
           parsedAssignees = JSON.parse(parsedAssignees);
         } catch {
@@ -294,13 +295,22 @@ export const updateTask = async (req, res) => {
       }
 
       // Automatically handle group and section logic if provided
-      if (req.body.taskType === "group" && req.body.groupId && req.body.groupId !== "personal") {
+      if (
+        req.body.taskType === "group" &&
+        req.body.groupId &&
+        req.body.groupId !== "personal"
+      ) {
         const group = await Group.findById(req.body.groupId);
         if (group) {
           req.body.adminId = group.admin;
           // Ensure assignees are all group members + admin
-          req.body.assignees = [...new Set([...group.members.map(id => id.toString()), group.admin.toString()])];
-          
+          req.body.assignees = [
+            ...new Set([
+              ...group.members.map((id) => id.toString()),
+              group.admin.toString(),
+            ]),
+          ];
+
           if (req.body.section && req.body.section.trim() !== "") {
             const sectionName = req.body.section.trim();
             if (!group.sections || !group.sections.includes(sectionName)) {
@@ -319,14 +329,16 @@ export const updateTask = async (req, res) => {
 
       const oldStatus = task.status;
       Object.assign(task, req.body);
-      
+
       if (attachmentUrls.length > 0) {
         task.attachments = [...(task.attachments || []), ...attachmentUrls];
       }
 
       const updatedTask = await task.save();
 
-      const isPersonalTask = task.taskType === "personal" || (!task.taskType && task.groupId === "personal");
+      const isPersonalTask =
+        task.taskType === "personal" ||
+        (!task.taskType && task.groupId === "personal");
 
       // Notify if status changed
       if (req.body.status && req.body.status !== oldStatus) {
@@ -489,7 +501,11 @@ export const addComment = async (req, res) => {
       let isGroupMember = false;
       if (task.groupId && task.groupId !== "personal") {
         const group = await Group.findById(task.groupId).select("members");
-        if (group && group.members && group.members.some(m => m.toString() === req.userId.toString())) {
+        if (
+          group &&
+          group.members &&
+          group.members.some((m) => m.toString() === req.userId.toString())
+        ) {
           isGroupMember = true;
         }
       }
@@ -651,7 +667,11 @@ export const getTaskDetails = async (req, res) => {
     if (task.groupId && task.groupId !== "personal") {
       const group = await Group.findById(task.groupId).select("name members");
       task.groupName = group ? group.name : "Deleted Group";
-      if (group && group.members && group.members.some(m => m.toString() === req.userId.toString())) {
+      if (
+        group &&
+        group.members &&
+        group.members.some((m) => m.toString() === req.userId.toString())
+      ) {
         isGroupMember = true;
       }
     } else {
@@ -714,7 +734,11 @@ export const updateTaskStatus = async (req, res) => {
     let isGroupMember = false;
     if (task.groupId && task.groupId !== "personal") {
       const group = await Group.findById(task.groupId).select("members");
-      if (group && group.members && group.members.some(m => m.toString() === req.userId.toString())) {
+      if (
+        group &&
+        group.members &&
+        group.members.some((m) => m.toString() === req.userId.toString())
+      ) {
         isGroupMember = true;
       }
     }
@@ -727,7 +751,9 @@ export const updateTaskStatus = async (req, res) => {
     task.status = status;
     const updatedTask = await task.save();
 
-    const isPersonalTask = task.taskType === "personal" || (!task.taskType && task.groupId === "personal");
+    const isPersonalTask =
+      task.taskType === "personal" ||
+      (!task.taskType && task.groupId === "personal");
 
     // Notify if status changed
     if (status !== oldStatus) {
@@ -772,6 +798,121 @@ export const updateTaskStatus = async (req, res) => {
       data: updatedTask,
     });
   } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const sendDeadlineReminders = async (req, res) => {
+  try {
+    const today = new Date();
+    const startOfTomorrow = new Date(today);
+    startOfTomorrow.setDate(today.getDate() + 1);
+    startOfTomorrow.setHours(0, 0, 0, 0);
+
+    const endOfTomorrow = new Date(today);
+    endOfTomorrow.setDate(today.getDate() + 1);
+    endOfTomorrow.setHours(23, 59, 59, 999);
+
+    const tasks = await Task.find({
+      status: { $ne: "Completed" },
+      dueDate: { $gte: startOfTomorrow, $lte: endOfTomorrow },
+      deadlineReminderSent: { $ne: true },
+    })
+      .populate("assignees", "name email")
+      .populate("adminId", "name email");
+
+    let emailsSent = 0;
+
+    for (const task of tasks) {
+      const { title, dueDate, assignees, adminId, taskType } = task;
+      const formattedDate = new Date(dueDate).toLocaleDateString();
+
+      const subject = `⏰ Reminder: "${title}" is Due Tomorrow`;
+
+      const employeeMessage = `
+<p>Hello,</p>
+
+<p>This is a friendly reminder that your assigned task <strong>"${title}"</strong> is scheduled to be completed by <strong>${formattedDate}</strong>.</p>
+
+<p>Please make sure the task is completed before the deadline to avoid any delays.</p>
+
+<p>If you have already completed the task, kindly update its status in the Task Management System.</p>
+
+<p>Thank you for your attention and timely action.</p>
+
+<p><strong>Task Details:</strong></p>
+<ul>
+  <li><strong>Task:</strong> ${title}</li>
+  <li><strong>Due Date:</strong> ${formattedDate}</li>
+</ul>
+
+<p>Best Regards,<br>
+Task Management System</p>
+`;
+
+      const adminMessage = `
+<p>Hello ${adminId?.name || "Admin"},</p>
+
+<p>This is an automated reminder that the following task assigned to your team is due tomorrow.</p>
+
+<p><strong>Task Details:</strong></p>
+<ul>
+  <li><strong>Task:</strong> ${title}</li>
+  <li><strong>Due Date:</strong> ${formattedDate}</li>
+  <li><strong>Assigned To:</strong> ${assignees.map((a) => a.name).join(", ")}</li>
+</ul>
+
+<p>Please follow up with the assigned team member(s) if necessary to ensure the task is completed on time.</p>
+
+<p>Thank you.</p>
+
+<p>Best Regards,<br>
+Task Management System</p>
+`;
+
+      // Send to assignees
+      if (assignees && assignees.length > 0) {
+        for (const assignee of assignees) {
+          if (assignee.email) {
+            await sendNotificationEmail(
+              assignee.email,
+              subject,
+              "Task Deadline Reminder",
+              employeeMessage,
+            );
+            emailsSent++;
+          }
+        }
+      }
+
+      // Send to admin (only for group or employee tasks, not personal tasks)
+      if (adminId && adminId.email && taskType !== "personal") {
+        const isAdminAssigned = assignees.some(
+          (a) => a._id.toString() === adminId._id.toString(),
+        );
+        if (!isAdminAssigned) {
+          await sendNotificationEmail(
+            adminId.email,
+            subject,
+            "Task Deadline Reminder",
+            adminMessage,
+          );
+          emailsSent++;
+        }
+      }
+
+      // Mark as sent so it doesn't send again
+      task.deadlineReminderSent = true;
+      await task.save();
+    }
+
+    res.status(200).json({
+      status: true,
+      message: `Sent ${emailsSent} reminder emails.`,
+      tasksCount: tasks.length,
+    });
+  } catch (error) {
+    console.error("Error sending deadline reminders:", error);
     res.status(500).json({ status: false, message: error.message });
   }
 };

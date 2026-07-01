@@ -1,7 +1,10 @@
 import Group from "../models/groupModel.js";
 import Task from "../models/taskModel.js";
 import User from "../models/userModel.js";
-import { createNotification, notifyMultipleUsers } from "../helpers/notificationHelper.js";
+import {
+  createNotification,
+  notifyMultipleUsers,
+} from "../helpers/notificationHelper.js";
 
 export const createGroup = async (req, res) => {
   try {
@@ -52,7 +55,6 @@ export const createGroup = async (req, res) => {
         message: "Group created successfully",
         data: group,
       });
-
     } else {
       res.status(400).json({ status: false, message: "Invalid group data" });
     }
@@ -66,7 +68,6 @@ export const getGroups = async (req, res) => {
     const groups = await Group.find({
       $or: [{ admin: req.userId }, { members: req.userId }],
     }).populate("members", "name email role avatar");
-
 
     res.status(200).json({
       status: true,
@@ -89,7 +90,7 @@ export const updateGroup = async (req, res) => {
       const user = await User.findById(req.userId);
       const isGroupAdmin = group.admin.toString() === req.userId;
       const isAdminRole = user?.role === "Admin";
-      const isMember = group.members.some(m => m.toString() === req.userId);
+      const isMember = group.members.some((m) => m.toString() === req.userId);
 
       if (!isGroupAdmin && !isAdminRole) {
         if (!isMember) {
@@ -98,7 +99,7 @@ export const updateGroup = async (req, res) => {
             message: "Not authorized to update this group",
           });
         }
-        
+
         // Employee members can only update sections
         if (name || description || members) {
           return res.status(403).json({
@@ -108,7 +109,7 @@ export const updateGroup = async (req, res) => {
         }
       }
 
-      const oldMembers = group.members.map(m => m.toString());
+      const oldMembers = group.members.map((m) => m.toString());
       if (name) group.name = name;
       if (description !== undefined) group.description = description;
       if (members) group.members = members;
@@ -118,7 +119,9 @@ export const updateGroup = async (req, res) => {
 
       // Notify new members
       if (members) {
-        const newMembers = members.filter(m => !oldMembers.includes(m.toString()));
+        const newMembers = members.filter(
+          (m) => !oldMembers.includes(m.toString()),
+        );
         for (const memberId of newMembers) {
           if (memberId.toString() !== req.userId.toString()) {
             await createNotification({
@@ -191,12 +194,13 @@ export const getGroupDetails = async (req, res) => {
 
     const group = await Group.findById(id).populate(
       "members",
-      "name email role avatar"
+      "name email role avatar",
     );
 
-
     if (!group) {
-      return res.status(404).json({ status: false, message: "Group not found" });
+      return res
+        .status(404)
+        .json({ status: false, message: "Group not found" });
     }
 
     const user = await User.findById(req.userId);
@@ -204,19 +208,21 @@ export const getGroupDetails = async (req, res) => {
 
     if (group.admin.toString() !== adminId.toString()) {
       const isMember = group.members.some(
-        (m) => m._id.toString() === req.userId
+        (m) => m._id.toString() === req.userId,
       );
       if (!isMember && user.role !== "Admin") {
         return res
           .status(403)
-          .json({ status: false, message: "Not authorized to view this group" });
+          .json({
+            status: false,
+            message: "Not authorized to view this group",
+          });
       }
     }
 
     const tasks = await Task.find({ groupId: id })
       .populate("assignees", "name email role avatar")
       .populate("comments.userId", "name avatar");
-
 
     res.status(200).json({
       status: true,
@@ -230,4 +236,3 @@ export const getGroupDetails = async (req, res) => {
     res.status(500).json({ status: false, message: error.message });
   }
 };
-

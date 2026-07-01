@@ -9,11 +9,11 @@ import {
   getGroupAssignedTasks,
   getTaskDetails,
   updateTaskStatus,
+  sendDeadlineReminders,
 } from "../controllers/taskController.js";
 
 import { protect, admin } from "../middlewares/authMiddleware.js";
 import upload from "../middlewares/uploadMiddleware.js";
-
 
 const router = express.Router();
 
@@ -26,10 +26,6 @@ router.get("/get-group-assigned-tasks", protect, getGroupAssignedTasks);
 router.get("/get-task-details/:id", protect, getTaskDetails);
 router.put("/update-status/:id", protect, updateTaskStatus);
 router.post("/add-comment/:id", protect, addComment);
-
-
-
-
-
+router.get("/send-deadline-reminders", sendDeadlineReminders);
 
 export default router;

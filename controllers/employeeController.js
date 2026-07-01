@@ -1,7 +1,9 @@
 import User from "../models/userModel.js";
 import Task from "../models/taskModel.js";
 import Group from "../models/groupModel.js";
-import sendEmployeeEmail, { sendNotificationEmail } from "../helpers/emailHelper.js";
+import sendEmployeeEmail, {
+  sendNotificationEmail,
+} from "../helpers/emailHelper.js";
 
 export const getEmployeeDetails = async (req, res) => {
   try {
@@ -9,7 +11,9 @@ export const getEmployeeDetails = async (req, res) => {
     const employee = await User.findOne({ _id: id, adminId: req.userId });
 
     if (!employee) {
-      return res.status(404).json({ status: false, message: "Employee not found" });
+      return res
+        .status(404)
+        .json({ status: false, message: "Employee not found" });
     }
 
     const tasks = await Task.find({
@@ -17,20 +21,34 @@ export const getEmployeeDetails = async (req, res) => {
       $or: [
         { taskType: { $in: ["employee", "group"] } },
         { groupId: { $ne: "personal" } },
-        { taskType: { $exists: false }, groupId: "personal", createdBy: req.userId },
+        {
+          taskType: { $exists: false },
+          groupId: "personal",
+          createdBy: req.userId,
+        },
       ],
     })
       .populate("comments.userId", "name avatar")
       .lean();
 
     // Fetch group names for group tasks
-    const groupIds = [...new Set(tasks.filter(t => t.groupId !== "personal").map(t => t.groupId))];
+    const groupIds = [
+      ...new Set(
+        tasks.filter((t) => t.groupId !== "personal").map((t) => t.groupId),
+      ),
+    ];
     const groups = await Group.find({ _id: { $in: groupIds } }).select("name");
-    const groupMap = groups.reduce((acc, g) => ({ ...acc, [g._id.toString()]: g.name }), {});
+    const groupMap = groups.reduce(
+      (acc, g) => ({ ...acc, [g._id.toString()]: g.name }),
+      {},
+    );
 
-    const tasksWithGroupInfo = tasks.map(task => ({
+    const tasksWithGroupInfo = tasks.map((task) => ({
       ...task,
-      groupName: task.groupId === "personal" ? null : (groupMap[task.groupId] || "Deleted Group")
+      groupName:
+        task.groupId === "personal"
+          ? null
+          : groupMap[task.groupId] || "Deleted Group",
     }));
 
     res.status(200).json({
@@ -69,8 +87,6 @@ export const addEmployee = async (req, res) => {
         .json({ status: false, message: "Employee already exists" });
     }
 
-
-
     const generateRandomPassword = (length = 10) => {
       const charset =
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
@@ -96,15 +112,15 @@ export const addEmployee = async (req, res) => {
       adminId: req.userId,
     });
 
-
     if (employee) {
       const adminUser = await User.findById(req.userId);
       await sendEmployeeEmail(
-        email, 
-        defaultPassword, 
-        name, 
-        adminUser?.name || "Administrator", 
-        adminUser?.businessName || "the"
+        email,
+        defaultPassword,
+        name,
+        adminUser?.name || "Administrator",
+        adminUser?.businessName || "Your Organization",
+        designation || "Employee",
       );
 
       res.status(201).json({
@@ -121,15 +137,20 @@ export const addEmployee = async (req, res) => {
 
 export const getEmployees = async (req, res) => {
   try {
-    const employees = await User.find({ 
+    const employees = await User.find({
       adminId: req.userId,
-      role: "Employee" 
-    }).select("-password").lean();
-    
+      role: "Employee",
+    })
+      .select("-password")
+      .lean();
+
     // Add fallback for name for legacy users
-    const sanitizedEmployees = employees.map(emp => ({
-        ...emp,
-        name: emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'No Name'
+    const sanitizedEmployees = employees.map((emp) => ({
+      ...emp,
+      name:
+        emp.name ||
+        `${emp.firstName || ""} ${emp.lastName || ""}`.trim() ||
+        "No Name",
     }));
 
     res.status(200).json({
@@ -137,7 +158,6 @@ export const getEmployees = async (req, res) => {
       message: "Employees fetched successfully",
       data: sanitizedEmployees,
     });
-
   } catch (error) {
     res.status(500).json({ status: false, message: error.message });
   }
@@ -160,30 +180,97 @@ export const updateEmployee = async (req, res) => {
       employee.role = role || employee.role;
       employee.designation = designation || employee.designation;
 
-
-
-
       const updatedEmployee = await employee.save();
 
       // Send update notification email
       await sendNotificationEmail(
         updatedEmployee.email,
-        "Your Account Details Have Been Updated - Task-Management-Infasta",
-        "Account Updated",
+        "✅ Your Account Information Has Been Updated",
+        "Account Details Updated",
         `
-        <p>Hello ${updatedEmployee.name},</p>
-        <p>Your account details have been updated by the administrator. Please review your updated profile in the application.</p>
-        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Name:</strong> ${updatedEmployee.name}</p>
-            <p style="margin: 0;"><strong>Designation:</strong> ${updatedEmployee.designation || "Not set"}</p>
-            <p style="margin: 0;"><strong>Mobile:</strong> ${updatedEmployee.mobile || "Not set"}</p>
-        </div>
+    <p>Hello <strong>${updatedEmployee.name}</strong>,</p>
 
-        `
+    <p>
+      This is to let you know that your account information in
+      <strong>Task-Management-Infasta</strong> has been updated by your administrator.
+    </p>
+
+    <div style="
+      background:#f9fafb;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      padding:20px;
+      margin:25px 0;
+    ">
+
+      <h3 style="margin-top:0;color:#111827;">
+        📋 Updated Profile Information
+      </h3>
+
+      <table style="width:100%;border-collapse:collapse;">
+
+        <tr>
+          <td style="padding:8px 0;"><strong>Name</strong></td>
+          <td style="padding:8px 0;">${updatedEmployee.name}</td>
+        </tr>
+
+        <tr>
+          <td style="padding:8px 0;"><strong>Email</strong></td>
+          <td style="padding:8px 0;">${updatedEmployee.email}</td>
+        </tr>
+
+        <tr>
+          <td style="padding:8px 0;"><strong>Mobile</strong></td>
+          <td style="padding:8px 0;">${updatedEmployee.mobile || "Not Provided"}</td>
+        </tr>
+
+        <tr>
+          <td style="padding:8px 0;"><strong>Designation</strong></td>
+          <td style="padding:8px 0;">${updatedEmployee.designation || "Not Assigned"}</td>
+        </tr>
+
+        <tr>
+          <td style="padding:8px 0;"><strong>Role</strong></td>
+          <td style="padding:8px 0;">${updatedEmployee.role}</td>
+        </tr>
+
+      </table>
+
+    </div>
+
+    <div style="
+      background:#eef2ff;
+      border-left:4px solid #7c3aed;
+      padding:18px;
+      border-radius:6px;
+      margin-bottom:25px;
+    ">
+      <strong>What should you do?</strong>
+      <ul style="margin:10px 0 0 18px;line-height:1.8;">
+        <li>Review your updated profile information.</li>
+        <li>Verify that all details are accurate.</li>
+        <li>If you notice anything incorrect, please contact your administrator.</li>
+      </ul>
+    </div>
+
+    <p>
+      If you did not expect these changes, please reach out to your administrator immediately.
+    </p>
+
+    <p>
+      Thank you for using <strong>Task-Management-Infasta</strong>.
+    </p>
+
+    <br>
+
+    <p>
+      Best Regards,<br>
+      <strong>Task-Management-Infasta Team</strong>
+    </p>
+  `,
       );
 
       res.status(200).json({
-
         status: true,
         message: "Employee updated successfully",
         data: updatedEmployee,
@@ -199,7 +286,10 @@ export const updateEmployee = async (req, res) => {
 export const deleteEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const employee = await User.findOneAndDelete({ _id: id, adminId: req.userId });
+    const employee = await User.findOneAndDelete({
+      _id: id,
+      adminId: req.userId,
+    });
 
     if (employee) {
       res.status(200).json({

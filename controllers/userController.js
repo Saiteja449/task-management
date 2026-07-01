@@ -6,7 +6,6 @@ export const signupUser = async (req, res) => {
   try {
     const requiredFields = [
       "name",
-
       "email",
       "password",
       "businessName",
@@ -63,11 +62,44 @@ export const signupUser = async (req, res) => {
       // Send Welcome Email
       await sendNotificationEmail(
         user.email,
-        "Welcome to Task-Management-Infasta!",
-        `Welcome to Task-Management-Infasta, ${user.name}!`,
+        `🎉 Welcome to Task-Management-Infasta!`,
+        `Welcome, ${user.name}! 👋`,
+        `
+    <p>Hi <strong>${user.name}</strong>,</p>
 
-        `<p>We're excited to have you on board. Your account for <strong>${user.businessName}</strong> has been successfully created.</p>
-         <p>You can now start managing your tasks and employees.</p>`,
+    <p>We're thrilled to welcome you to <strong>Task-Management-Infasta</strong>!</p>
+
+    <p>Your workspace for <strong>${user.businessName}</strong> has been successfully created and is ready to use.</p>
+
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:18px;margin:24px 0;">
+      <h3 style="margin:0 0 12px;color:#111827;">🚀 What's Next?</h3>
+      <ul style="padding-left:20px;margin:0;line-height:1.8;">
+        <li>Create and organize your tasks.</li>
+        <li>Invite employees and assign work.</li>
+        <li>Track task progress in real time.</li>
+        <li>Receive deadline reminders and notifications.</li>
+        <li>Boost your team's productivity with centralized task management.</li>
+      </ul>
+    </div>
+
+    <p>Click the button below to log in and start managing your team.</p>
+
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login"
+         style="background:#7c3aed;color:#ffffff;text-decoration:none;padding:14px 30px;border-radius:8px;font-size:16px;font-weight:600;display:inline-block;">
+         Login to Your Workspace
+      </a>
+    </div>
+
+    <p>If you have any questions or need assistance, our support team is always here to help.</p>
+
+    <p>Thank you for choosing <strong>Task-Management-Infasta</strong>. We look forward to helping you and your team stay organized and productive.</p>
+
+    <br>
+
+    <p>Best Regards,<br>
+    <strong>Task-Management-Infasta Team</strong></p>
+  `,
       );
 
       res.status(201).json({
@@ -189,7 +221,9 @@ export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
-      return res.status(400).json({ status: false, message: "Email is required" });
+      return res
+        .status(400)
+        .json({ status: false, message: "Email is required" });
     }
 
     const user = await User.findOne({ email });
@@ -219,7 +253,12 @@ export const forgotPassword = async (req, res) => {
         message: "A new password has been sent to your email address.",
       });
     } else {
-      res.status(404).json({ status: false, message: "No account found with this email address." });
+      res
+        .status(404)
+        .json({
+          status: false,
+          message: "No account found with this email address.",
+        });
     }
   } catch (error) {
     res.status(500).json({ status: false, message: error.message });
