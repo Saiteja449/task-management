@@ -5,6 +5,7 @@ import {
   createNotification,
   notifyMultipleUsers,
 } from "../helpers/notificationHelper.js";
+import { uploadMultipleToCloudinary } from "../helpers/uploadHelper.js";
 
 export const createGroup = async (req, res) => {
   try {
@@ -21,7 +22,7 @@ export const createGroup = async (req, res) => {
       name,
       description,
       members: members || [],
-      sections: req.body.sections || ["General"],
+      sections: req.body.sections || [],
       admin: req.userId,
     });
 
@@ -268,5 +269,116 @@ export const getGroupDetails = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const uploadWorkspaceFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, uploadType, linkUrl } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ status: false, message: "Title is required" });
+    }
+
+    if (uploadType === "file" && !req.file) {
+      return res.status(400).json({ status: false, message: "File is required" });
+    }
+
+    if (uploadType === "link" && !linkUrl) {
+      return res.status(400).json({ status: false, message: "URL is required" });
+    }
+
+    const group = await Group.findById(id);
+    if (!group) {
+      return res.status(404).json({ status: false, message: "Group not found" });
+    }
+
+    // Verify user is part of group or admin
+    const user = await User.findById(req.userId);
+    const adminId = user.role === "Admin" ? user._id : user.adminId;
+    
+    if (group.admin.toString() !== adminId.toString()) {
+      const isMember = group.members.some((m) => m._id.toString() === req.userId);
+      if (!isMember && user.role !== "Admin") {
+        return res.status(403).json({ status: false, message: "Not authorized to upload files to this workspace" });
+      }
+    }
+
+    let newFile;
+
+    if (uploadType === "file") {
+      const uploadedFiles = await uploadMultipleToCloudinary([req.file]);
+      
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        newFile = {
+          title,
+          url: uploadedFiles[0].url,
+          publicId: uploadedFiles[0].publicId,
+          format: uploadedFiles[0].format,
+          type: uploadedFiles[0].type,
+          name: uploadedFiles[0].name
+        };
+      } else {
+        return res.status(500).json({ status: false, message: "Failed to upload file to Cloudinary" });
+      }
+    } else {
+      newFile = {
+        title,
+        url: linkUrl,
+        type: "link"
+      };
+    }
+
+    group.workspaceFiles = group.workspaceFiles || [];
+    group.workspaceFiles.push(newFile);
+
+    await group.save();
+
+    return res.status(200).json({
+      status: true,
+      message: "Resource added successfully",
+      data: newFile
+    });
+  } catch (error) {
+    return res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const deleteWorkspaceFile = async (req, res) => {
+  try {
+    const { id, fileId } = req.params;
+
+    const group = await Group.findById(id);
+    if (!group) {
+      return res.status(404).json({ status: false, message: "Group not found" });
+    }
+
+    // Verify user is part of group or admin
+    const user = await User.findById(req.userId);
+    const adminId = user.role === "Admin" ? user._id : user.adminId;
+    
+    if (group.admin.toString() !== adminId.toString()) {
+      const isMember = group.members.some((m) => m._id.toString() === req.userId);
+      if (!isMember && user.role !== "Admin") {
+        return res.status(403).json({ status: false, message: "Not authorized to delete files from this workspace" });
+      }
+    }
+
+    const fileIndex = group.workspaceFiles.findIndex(f => f._id.toString() === fileId);
+    
+    if (fileIndex === -1) {
+      return res.status(404).json({ status: false, message: "File not found" });
+    }
+
+    group.workspaceFiles.splice(fileIndex, 1);
+    await group.save();
+
+    return res.status(200).json({
+      status: true,
+      message: "Resource deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ status: false, message: error.message });
   }
 };

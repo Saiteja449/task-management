@@ -1,5 +1,20 @@
 import mongoose from "mongoose";
 
+const workspaceFileSchema = mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+    url: String,
+    publicId: String,
+    format: String,
+    type: String,
+    name: String,
+  },
+  { timestamps: true }
+);
+
 const groupSchema = mongoose.Schema(
   {
     name: {
@@ -25,6 +40,7 @@ const groupSchema = mongoose.Schema(
         type: String,
       },
     ],
+    workspaceFiles: [workspaceFileSchema],
   },
   {
     timestamps: true,

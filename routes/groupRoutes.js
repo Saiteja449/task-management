@@ -5,8 +5,11 @@ import {
   updateGroup,
   deleteGroup,
   getGroupDetails,
+  uploadWorkspaceFile,
+  deleteWorkspaceFile,
 } from "../controllers/groupController.js";
 import { protect, admin } from "../middlewares/authMiddleware.js";
+import upload from "../middlewares/uploadMiddleware.js";
 
 const router = express.Router();
 
@@ -15,6 +18,7 @@ router.get("/get-groups", protect, getGroups);
 router.get("/get-group-details/:id", protect, getGroupDetails);
 router.put("/update-group/:id", protect, updateGroup);
 router.delete("/delete-group/:id", protect, admin, deleteGroup);
-
+router.post("/upload-file/:id", protect, upload.single("file"), uploadWorkspaceFile);
+router.delete("/delete-file/:id/:fileId", protect, deleteWorkspaceFile);
 
 export default router;
