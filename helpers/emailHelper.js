@@ -26,12 +26,12 @@ const sendEmployeeEmail = async (
       .toUpperCase()
       .substring(0, 2);
     const frontendUrl =
-      process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app";
+      process.env.FRONTEND_URL || "https://DoNow.netlify.app";
 
     const mailOptions = {
-      from: `"Task-Management-Infasta Admin" <${process.env.SMTP_USER}>`,
+      from: `"DoNow Admin" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: `Join the ${businessName} team on Task-Management-Infasta`,
+      subject: `Join the ${businessName} team on DoNow`,
       html: `
 <!DOCTYPE html>
 <html>
@@ -147,7 +147,7 @@ body{
 <div class="container">
 
 <div class="header">
-<h1>🎉 Welcome to Task-Management-Infasta</h1>
+<h1>🎉 Welcome to DoNow</h1>
 <p>You've been invited to join <strong>${businessName}</strong></p>
 </div>
 
@@ -157,7 +157,7 @@ body{
 
 <p>
 <strong>${adminName}</strong> has invited you to collaborate on your company's workspace in
-<strong>Task-Management-Infasta</strong>.
+<strong>DoNow</strong>.
 </p>
 
 <p>
@@ -228,14 +228,14 @@ We're excited to have you on board and look forward to helping you stay organize
 
 <p>
 Regards,<br>
-<strong>Task-Management-Infasta Team</strong>
+<strong>DoNow Team</strong>
 </p>
 
 </div>
 
 <div class="footer">
 
-Task-Management-Infasta<br><br>
+DoNow<br><br>
 
 This invitation was sent by <strong>${adminName}</strong> on behalf of <strong>${businessName}</strong>.
 
@@ -276,7 +276,7 @@ export const sendNotificationEmail = async (
     });
 
     const frontendUrl =
-      process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app";
+      process.env.FRONTEND_URL || "https://DoNow.netlify.app";
 
     const attachmentsHtml =
       attachments && attachments.length > 0
@@ -299,7 +299,7 @@ export const sendNotificationEmail = async (
         : "";
 
     const mailOptions = {
-      from: `"Task-Management-Infasta" <${process.env.SMTP_USER}>`,
+      from: `"DoNow" <${process.env.SMTP_USER}>`,
       to: email,
       subject: subject,
       html: `
@@ -368,7 +368,7 @@ export const sendNotificationEmail = async (
             <div class="logo-header">
               <div class="logo-text">
                 <span class="logo-icon"></span>
-                Task-Management-Infasta
+                DoNow
               </div>
             </div>
             

@@ -1,85 +1,39 @@
-import cloudinary from "../configs/cloudinary.js";
-import streamifier from "streamifier";
+import dotenv from 'dotenv';
+dotenv.config();
 
 /**
- * Upload a single file buffer to Cloudinary.
- * @param {Buffer} fileBuffer - The file buffer from multer
- * @param {string} folder - Cloudinary folder name
- * @param {string} resourceType - "image", "raw", or "auto"
- * @returns {Promise<{url: string, publicId: string}>}
+ * Process single uploaded file and return local URL.
+ * @param {Object} file - The file object from multer (diskStorage)
+ * @returns {Promise<{url: string, name: string, type: string}>}
  */
-export const uploadToCloudinary = (
-  fileBuffer,
-  folder = "Task-Management-Infasta",
-  resourceType = "auto",
-  originalName = ""
-) => {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: resourceType,
-        use_filename: true,
-        unique_filename: true,
-        filename_override: originalName,
-        access_mode: "public",
-        type: "upload",
-      },
-      (error, result) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve({
-            url: result.secure_url,
-            publicId: result.public_id,
-            format: result.format,
-          });
-        }
-      }
-    );
-
-    streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+export const processLocalUpload = (file) => {
+  return new Promise((resolve) => {
+    const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 8001}`;
+    resolve({
+      url: `${baseUrl}/uploads/${file.filename}`,
+      name: file.originalname,
+      type: file.mimetype,
+    });
   });
 };
 
 /**
- * Determine the correct Cloudinary resource_type based on mimetype.
- * - "image" for image files (jpeg, png, gif, etc.)
- * - "video" for video/audio files
- * - "raw" for everything else (PDF, Word, Excel, zip, etc.)
- */
-const getResourceType = (mimetype) => {
-  if (mimetype.startsWith("image/")) return "image";
-  return "raw";
-};
-
-/**
- * Upload multiple file buffers to Cloudinary.
- * @param {Array<{buffer: Buffer, mimetype: string, originalname: string}>} files
- * @param {string} folder
+ * Process multiple uploaded files and return local URLs.
+ * @param {Array<Object>} files - The file objects from multer
  * @returns {Promise<Object[]>} Array of file objects
  */
-export const uploadMultipleToCloudinary = async (
-  files,
-  folder = "Task-Management-Infasta/attachments",
-) => {
+export const uploadMultipleToCloudinary = async (files) => {
   if (!files || files.length === 0) return [];
 
   const uploadPromises = files.map(async (file) => {
-    const result = await uploadToCloudinary(
-      file.buffer,
-      folder,
-      getResourceType(file.mimetype),
-      file.originalname,
-    );
+    const result = await processLocalUpload(file);
     return {
       url: result.url,
-      publicId: result.publicId,
-      format: result.format,
-      type: file.mimetype,
-      name: file.originalname
+      type: result.type,
+      name: result.name
     };
   });
 
   return await Promise.all(uploadPromises);
 };
+

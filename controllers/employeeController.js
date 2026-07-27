@@ -192,7 +192,7 @@ export const updateEmployee = async (req, res) => {
 
     <p>
       This is to let you know that your account information in
-      <strong>Task-Management-Infasta</strong> has been updated by your administrator.
+      <strong>DoNow</strong> has been updated by your administrator.
     </p>
 
     <div style="
@@ -258,14 +258,14 @@ export const updateEmployee = async (req, res) => {
     </p>
 
     <p>
-      Thank you for using <strong>Task-Management-Infasta</strong>.
+      Thank you for using <strong>DoNow</strong>.
     </p>
 
     <br>
 
     <p>
       Best Regards,<br>
-      <strong>Task-Management-Infasta Team</strong>
+      <strong>DoNow Team</strong>
     </p>
   `,
       );

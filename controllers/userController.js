@@ -62,12 +62,12 @@ export const signupUser = async (req, res) => {
       // Send Welcome Email
       await sendNotificationEmail(
         user.email,
-        `🎉 Welcome to Task-Management-Infasta!`,
+        `🎉 Welcome to DoNow!`,
         `Welcome, ${user.name}! 👋`,
         `
     <p>Hi <strong>${user.name}</strong>,</p>
 
-    <p>We're thrilled to welcome you to <strong>Task-Management-Infasta</strong>!</p>
+    <p>We're thrilled to welcome you to <strong>DoNow</strong>!</p>
 
     <p>Your workspace for <strong>${user.businessName}</strong> has been successfully created and is ready to use.</p>
 
@@ -78,14 +78,14 @@ export const signupUser = async (req, res) => {
         <li>Invite employees and assign work.</li>
         <li>Track task progress in real time.</li>
         <li>Receive deadline reminders and notifications.</li>
-        <li>Boost your team's productivity with centralized task management.</li>
+        <li>Boost your team's productivity with centralized DoNow.</li>
       </ul>
     </div>
 
     <p>Click the button below to log in and start managing your team.</p>
 
     <div style="text-align:center;margin:32px 0;">
-      <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login"
+      <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login"
          style="background:#7c3aed;color:#ffffff;text-decoration:none;padding:14px 30px;border-radius:8px;font-size:16px;font-weight:600;display:inline-block;">
          Login to Your Workspace
       </a>
@@ -93,12 +93,12 @@ export const signupUser = async (req, res) => {
 
     <p>If you have any questions or need assistance, our support team is always here to help.</p>
 
-    <p>Thank you for choosing <strong>Task-Management-Infasta</strong>. We look forward to helping you and your team stay organized and productive.</p>
+    <p>Thank you for choosing <strong>DoNow</strong>. We look forward to helping you and your team stay organized and productive.</p>
 
     <br>
 
     <p>Best Regards,<br>
-    <strong>Task-Management-Infasta Team</strong></p>
+    <strong>DoNow Team</strong></p>
   `,
       );
 
@@ -190,7 +190,7 @@ export const resetPassword = async (req, res) => {
       await user.save();
       await sendNotificationEmail(
         user.email,
-        "Your Password Has Been Reset - Task-Management-Infasta",
+        "Your Password Has Been Reset - DoNow",
         "Password Reset Successful",
         `
         <p>Hello ${user.name},</p>
@@ -235,7 +235,7 @@ export const forgotPassword = async (req, res) => {
 
       await sendNotificationEmail(
         user.email,
-        "Password Recovery - Task-Management-Infasta",
+        "Password Recovery - DoNow",
         "New Password Generated",
         `
         <p>Hello ${user.name},</p>

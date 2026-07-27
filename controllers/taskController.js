@@ -165,7 +165,7 @@ export const createTask = async (req, res) => {
         emailMessage: `
     <p>Hello,</p>
 
-    <p>Your task has been created successfully in <strong>Task-Management-Infasta</strong>.</p>
+    <p>Your task has been created successfully in <strong>DoNow</strong>.</p>
 
     <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:25px 0;">
       <h3 style="margin-top:0;">📋 Task Details</h3>
@@ -196,7 +196,7 @@ export const createTask = async (req, res) => {
     <p>You can now monitor progress and collaborate with your team.</p>
 
     <div style="text-align:center;margin-top:30px;">
-      <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login"
+      <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login"
       style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">
       View Task
       </a>
@@ -204,7 +204,7 @@ export const createTask = async (req, res) => {
 
     <br>
 
-    <p>Thank you,<br><strong>Task-Management-Infasta Team</strong></p>
+    <p>Thank you,<br><strong>DoNow Team</strong></p>
   `,
         type: "task",
       });
@@ -221,7 +221,7 @@ export const createTask = async (req, res) => {
               emailMessage: `
 <p>Hello,</p>
 
-<p>You have been assigned a new task in <strong>Task-Management-Infasta</strong>.</p>
+<p>You have been assigned a new task in <strong>DoNow</strong>.</p>
 
 <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:25px 0;">
 
@@ -289,7 +289,7 @@ ${
 
 <div style="text-align:center;margin-top:30px;">
 
-<a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login"
+<a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login"
 style="
 background:#7c3aed;
 color:#fff;
@@ -305,7 +305,7 @@ Open Task
 <br>
 
 <p>Best Regards,<br>
-<strong>Task-Management-Infasta Team</strong></p>
+<strong>DoNow Team</strong></p>
 `,
               type: "task",
               attachments: task.attachments,
@@ -485,12 +485,12 @@ export const updateTask = async (req, res) => {
 <p>Hello,</p>
 <p>Your personal task <strong>"${task.title}"</strong> has been updated.</p>
 <p><strong>New Status:</strong> ${req.body.status}</p>
-<p>You can view the details in the Task Management System.</p>
+<p>You can view the details in the DoNow System.</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
             type: "task",
           });
@@ -508,10 +508,10 @@ export const updateTask = async (req, res) => {
 <p><strong>New Status:</strong> ${req.body.status}</p>
 <p><strong>Updated By:</strong> ${user.name}</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
               type: "task",
             });
@@ -531,10 +531,10 @@ export const updateTask = async (req, res) => {
 <p><strong>New Status:</strong> ${req.body.status}</p>
 <p><strong>Updated By:</strong> ${user.name}</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
                 type: "task",
               });
@@ -553,10 +553,10 @@ export const updateTask = async (req, res) => {
 <p>Hello,</p>
 <p>Your personal task <strong>"${task.title}"</strong> has been updated.</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
             type: "task",
           });
@@ -574,10 +574,10 @@ export const updateTask = async (req, res) => {
 <p><strong>Updated By:</strong> ${user.name}</p>
 <p>Please log in to view the changes.</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
                 type: "task",
               });
@@ -645,7 +645,7 @@ export const deleteTask = async (req, res) => {
 <p><strong>Deleted By:</strong> ${user.name}</p>
 <p>If you have any questions, please contact the administrator.</p>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
           type: "task",
         });
@@ -735,10 +735,10 @@ export const addComment = async (req, res) => {
   </blockquote>
 </div>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
           type: "task",
         });
@@ -977,10 +977,10 @@ export const updateTaskStatus = async (req, res) => {
 <p>Your personal task <strong>"${task.title}"</strong> status has been updated.</p>
 <p><strong>New Status:</strong> ${status}</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
           type: "task",
         });
@@ -998,10 +998,10 @@ export const updateTaskStatus = async (req, res) => {
 <p><strong>New Status:</strong> ${status}</p>
 <p><strong>Updated By:</strong> ${user.name}</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
             type: "task",
           });
@@ -1021,10 +1021,10 @@ export const updateTaskStatus = async (req, res) => {
 <p><strong>New Status:</strong> ${status}</p>
 <p><strong>Updated By:</strong> ${user.name}</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
               type: "task",
             });
@@ -1077,7 +1077,7 @@ export const sendDeadlineReminders = async (req, res) => {
 
 <p>Please make sure the task is completed before the deadline to avoid any delays.</p>
 
-<p>If you have already completed the task, kindly update its status in the Task Management System.</p>
+<p>If you have already completed the task, kindly update its status in the DoNow System.</p>
 
 <p>Thank you for your attention and timely action.</p>
 
@@ -1088,7 +1088,7 @@ export const sendDeadlineReminders = async (req, res) => {
 </ul>
 
 <p>Best Regards,<br>
-Task Management System</p>
+DoNow System</p>
 `;
 
       const adminMessage = `
@@ -1108,7 +1108,7 @@ Task Management System</p>
 <p>Thank you.</p>
 
 <p>Best Regards,<br>
-Task Management System</p>
+DoNow System</p>
 `;
 
       // Send to assignees

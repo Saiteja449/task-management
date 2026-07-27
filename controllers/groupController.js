@@ -37,10 +37,10 @@ export const createGroup = async (req, res) => {
 <p>Hello,</p>
 <p>The group <strong>"${group.name}"</strong> was successfully created.</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">Go to Workspace</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">Go to Workspace</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
         type: "group",
       });
@@ -58,10 +58,10 @@ export const createGroup = async (req, res) => {
 <p>Hello,</p>
 <p>You have been added to the new group <strong>"${group.name}"</strong>.</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Group</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Group</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
               type: "group",
             });
@@ -152,10 +152,10 @@ export const updateGroup = async (req, res) => {
 <p>Hello,</p>
 <p>You have been added to the group <strong>"${group.name}"</strong>.</p>
 <div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://task-management-infasta.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Group</a>
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Group</a>
 </div>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
               type: "group",
             });
@@ -206,7 +206,7 @@ export const deleteGroup = async (req, res) => {
 <p>The group <strong>"${groupName}"</strong> has been deleted.</p>
 <p>If you have any questions, please contact the administrator.</p>
 <br>
-<p>Best Regards,<br><strong>Task-Management-Infasta Team</strong></p>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
         type: "group",
       });
