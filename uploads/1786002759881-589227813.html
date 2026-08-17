@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petsfolio Walking Service - Interactive Flow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .path-indicator {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .path-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .path-badge.standard {
+            background: #E3F2FD;
+            color: #1976D2;
+            border: 2px solid #1976D2;
+        }
+
+        .path-badge.premium {
+            background: #FFF3E0;
+            color: #F57C00;
+            border: 2px solid #F57C00;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 30px;
+        }
+
+        .sidebar {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 20px;
+            color: #667eea;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .step-list {
+            list-style: none;
+        }
+
+        .step-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .step-item:hover {
+            background: #f5f5f5;
+        }
+
+        .step-item.active {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        .step-item.completed {
+            background: #C8E6C9;
+            color: #2E7D32;
+        }
+
+        .step-item .step-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .step-item.active .step-icon {
+            background: white;
+            color: #667eea;
+        }
+
+        .step-item.completed .step-icon {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .flow-area {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-height: 600px;
+            position: relative;
+        }
+
+        .step-screen {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .step-screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .screen-title {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .screen-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .card.standard {
+            border-color: #1976D2;
+            background: #E3F2FD;
+        }
+
+        .card.standard:hover {
+            background: #BBDEFB;
+        }
+
+        .card.premium {
+            border-color: #F57C00;
+            background: #FFF3E0;
+        }
+
+        .card.premium:hover {
+            background: #FFE0B2;
+        }
+
+        .card.premium::before {
+            content: "⭐ RECOMMENDED";
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: #F57C00;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .card ul {
+            list-style: none;
+            margin: 15px 0;
+        }
+
+        .card li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card li::before {
+            content: "✔";
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-block;
+            text-align: center;
+            margin: 10px 10px 10px 0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-standard {
+            background: #1976D2;
+            color: white;
+        }
+
+        .btn-premium {
+            background: #F57C00;
+            color: white;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        .package-option {
+            border: 2px solid #e0e0e0;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .package-option:hover {
+            border-color: #667eea;
+            background: #f5f5f5;
+        }
+
+        .package-option.selected {
+            border-color: #4CAF50;
+            background: #E8F5E9;
+            border-width: 3px;
+        }
+
+        .package-option .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #F57C00;
+        }
+
+        .addon-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .addon-checkbox:hover {
+            border-color: #667eea;
+            background: #f5f5f5;
+        }
+
+        .addon-checkbox.selected {
+            border-color: #4CAF50;
+            background: #E8F5E9;
+        }
+
+        .addon-checkbox input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .addon-details h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .addon-details ul {
+            list-style: none;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .addon-details li {
+            padding: 3px 0;
+        }
+
+        .upsell-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .upsell-modal.active {
+            display: flex;
+        }
+
+        .upsell-content {
+            background: #FFF9C4;
+            border: 4px dashed #F9A825;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+            animation: slideUp 0.5s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .upsell-content h2 {
+            color: #F57C00;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .upsell-content p {
+            color: #333;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .upsell-features {
+            text-align: left;
+            margin: 20px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .upsell-features li {
+            padding: 8px 0;
+            color: #333;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .checkout-summary {
+            background: #f5f5f5;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .checkout-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .checkout-line.total {
+            border-bottom: none;
+            border-top: 3px solid #333;
+            font-size: 24px;
+            font-weight: bold;
+            color: #F57C00;
+            margin-top: 10px;
+        }
+
+        .walker-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            display: flex;
+            gap: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .walker-card:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .walker-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .walker-info h4 {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .walker-rating {
+            color: #F57C00;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .walker-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .form-group {
+            margin: 20px 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .behavior-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .behavior-checkbox input {
+            width: 20px;
+            height: 20px;
+        }
+
+        .renewal-usage {
+            background: #E8F5E9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .usage-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #C8E6C9;
+        }
+
+        .usage-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-badge.used {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-badge.pending {
+            background: #FF9800;
+            color: white;
+        }
+
+        .navigation {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .reset-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
+            transition: all 0.3s;
+        }
+
+        .reset-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(244, 67, 54, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .flow-area {
+                padding: 20px;
+            }
+
+            .screen-title {
+                font-size: 24px;
+            }
+
+            .upsell-content {
+                margin: 20px;
+                padding: 30px;
+            }
+        }
+
+        .success-animation {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🐾 Petsfolio Walking Service</h1>
+            <div class="path-indicator">
+                <span id="currentPath" class="path-badge" style="display: none;"></span>
+                <button id="resetBtn" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">🔄 Restart</button>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 5%;"></div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar Navigation -->
+            <div class="sidebar">
+                <h3>📋 Flow Steps</h3>
+                <ul class="step-list" id="stepList">
+                    <li class="step-item active" data-step="0">
+                        <span class="step-icon">1</span>
+                        <span>Choose Service</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Flow Area -->
+            <div class="flow-area">
+                <!-- STEP 0: Choose Service -->
+                <div class="step-screen active" id="step-0">
+                    <h2 class="screen-title">Choose Your Service</h2>
+                    <p class="screen-subtitle">What service does Tommy need today?</p>
+
+                    <div class="card standard" onclick="nextStep(1)">
+                        <h3>🐕 Dog Walking</h3>
+                        <p>Professional walking services for your furry friend</p>
+                    </div>
+
+                    <div class="card" style="opacity: 0.5; cursor: not-allowed;">
+                        <h3>🏠 Pet Sitting</h3>
+                        <p>Coming soon...</p>
+                    </div>
+
+                    <div class="card" style="opacity: 0.5; cursor: not-allowed;">
+                        <h3>✂️ Grooming</h3>
+                        <p>Coming soon...</p>
+                    </div>
+                </div>
+
+                <!-- STEP 1: Choose Experience -->
+                <div class="step-screen" id="step-1">
+                    <h2 class="screen-title">Choose Your Experience</h2>
+                    <p class="screen-subtitle">How would you like to find Tommy's walker?</p>
+
+                    <div class="card standard" onclick="selectPath('standard')">
+                        <h3>1️⃣ Standard Walking Package</h3>
+                        <p style="margin: 10px 0; color: #666;">Choose your preferred walker</p>
+                        <ul>
+                            <li>Compare walkers</li>
+                            <li>Receive bids</li>
+                            <li>Select based on rating, price & experience</li>
+                        </ul>
+                        <p style="margin-top: 15px; font-weight: bold; color: #1976D2;">Best for: Experienced pet parents</p>
+                        <button class="btn btn-standard" style="margin-top: 15px;">Choose Standard</button>
+                    </div>
+
+                    <div class="card premium" onclick="selectPath('premium')">
+                        <h3>⭐ 2️⃣ Petsfolio Premium Walking</h3>
+                        <p style="margin: 10px 0; color: #666;">We find the right walker for Tommy</p>
+                        <ul>
+                            <li>Personalized walker recommendation</li>
+                            <li>Behaviour compatibility matching</li>
+                            <li>Dedicated coordination</li>
+                            <li>Replacement support if required</li>
+                            <li>Monthly follow-up by Petsfolio</li>
+                        </ul>
+                        <p style="margin-top: 15px; font-weight: bold; color: #F57C00;">Premium assistance included</p>
+                        <button class="btn btn-premium" style="margin-top: 15px;">Choose Premium ⭐</button>
+                    </div>
+                </div>
+
+                <!-- STEP 2A: Standard Package Selection -->
+                <div class="step-screen" id="step-2a">
+                    <h2 class="screen-title">Select Your Package</h2>
+                    <p class="screen-subtitle">Choose walking frequency for Tommy</p>
+
+                    <div class="package-option" data-package="daily" data-price="8000" onclick="selectPackage(this)">
+                        <div>
+                            <h4 style="font-size: 18px; margin-bottom: 5px;">Daily Walking</h4>
+                            <p style="color: #666; font-size: 14px;">7 days a week</p>
+                        </div>
+                        <div class="price">₹8,000<span style="font-size: 14px; color: #666;">/mo</span></div>
+                    </div>
+
+                    <div class="package-option" data-package="5days" data-price="6500" onclick="selectPackage(this)">
+                        <div>
+                            <h4 style="font-size: 18px; margin-bottom: 5px;">5 Days a Week</h4>
+                            <p style="color: #666; font-size: 14px;">Monday to Friday</p>
+                        </div>
+                        <div class="price">₹6,500<span style="font-size: 14px; color: #666;">/mo</span></div>
+                    </div>
+
+                    <div class="package-option" data-package="3days" data-price="4500" onclick="selectPackage(this)">
+                        <div>
+                            <h4 style="font-size: 18px; margin-bottom: 5px;">3 Days a Week</h4>
+                            <p style="color: #666; font-size: 14px;">Flexible schedule</p>
+                        </div>
+                        <div class="price">₹4,500<span style="font-size: 14px; color: #666;">/mo</span></div>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="previousStep()">← Back</button>
+                        <button class="btn btn-primary" id="packageNextBtn" onclick="showUpsell1()" disabled>Continue →</button>
+                    </div>
+                </div>
+
+                <!-- STEP 2B: Premium Package Selection -->
+                <div class="step-screen" id="step-2b">
+                    <h2 class="screen-title">Select Your Premium Package</h2>
+                    <p class="screen-subtitle">Choose walking frequency for Tommy</p>
+
+                    <div class="package-option" data-package="daily-premium" data-price="10000" onclick="selectPackage(this)">
+                        <div>
+                            <h4 style="font-size: 18px; margin-bottom: 5px;">Daily Premium Walking</h4>
+                            <p style="color: #666; font-size: 14px;">7 days a week + Premium care</p>
+                        </div>
+                        <div class="price">₹10,000<span style="font-size: 14px; color: #666;">/mo</span></div>
+                    </div>
+
+                    <div class="package-option" data-package="5days-premium" data-price="8500" onclick="selectPackage(this)">
+                        <div>
+                            <h4 style="font-size: 18px; margin-bottom: 5px;">5 Days Premium</h4>
+                            <p style="color: #666; font-size: 14px;">Monday to Friday + Premium care</p>
+                        </div>
+                        <div class="price">₹8,500<span style="font-size: 14px; color: #666;">/mo</span></div>
+                    </div>
+
+                    <div class="package-option" data-package="3days-premium" data-price="6000" onclick="selectPackage(this)">
+                        <div>
+                            <h4 style="font-size: 18px; margin-bottom: 5px;">3 Days Premium</h4>
+                            <p style="color: #666; font-size: 14px;">Flexible schedule + Premium care</p>
+                        </div>
+                        <div class="price">₹6,000<span style="font-size: 14px; color: #666;">/mo</span></div>
+                    </div>
+
+                    <div style="background: #FFF3E0; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #F57C00;">
+                        <h4 style="margin-bottom: 10px;">✨ Premium Includes:</h4>
+                        <ul style="list-style: none;">
+                            <li>✓ Personalized walker matching</li>
+                            <li>✓ Dedicated coordinator</li>
+                            <li>✓ Replacement guarantee</li>
+                            <li>✓ Monthly check-in calls</li>
+                        </ul>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="previousStep()">← Back</button>
+                        <button class="btn btn-premium" id="packageNextBtn2" onclick="nextStep('3b')" disabled>Continue →</button>
+                    </div>
+                </div>
+
+                <!-- STEP 3B: Dog Profile -->
+                <div class="step-screen" id="step-3b">
+                    <h2 class="screen-title">Tell Us About Tommy</h2>
+                    <p class="screen-subtitle">Help us find the perfect walker match</p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>🐕 Breed</label>
+                            <input type="text" placeholder="e.g., Labrador" id="breed">
+                        </div>
+                        <div class="form-group">
+                            <label>📅 Age</label>
+                            <select id="age">
+                                <option value="">Select age</option>
+                                <option value="puppy">Puppy (0-1 year)</option>
+                                <option value="young">Young (1-3 years)</option>
+                                <option value="adult">Adult (3-7 years)</option>
+                                <option value="senior">Senior (7+ years)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>📏 Size</label>
+                            <select id="size">
+                                <option value="">Select size</option>
+                                <option value="small">Small (0-10 kg)</option>
+                                <option value="medium">Medium (10-25 kg)</option>
+                                <option value="large">Large (25-45 kg)</option>
+                                <option value="xlarge">Extra Large (45+ kg)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>⚡ Energy Level</label>
+                            <select id="energy">
+                                <option value="">Select energy level</option>
+                                <option value="low">Low - Calm walks</option>
+                                <option value="medium">Medium - Regular activity</option>
+                                <option value="high">High - Very active</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <h4 style="margin-bottom: 15px;">🎯 Behavior Traits</h4>
+                        <div class="behavior-checkbox">
+                            <input type="checkbox" id="friendly-dogs">
+                            <label for="friendly-dogs">Friendly with other dogs</label>
+                        </div>
+                        <div class="behavior-checkbox">
+                            <input type="checkbox" id="friendly-people">
+                            <label for="friendly-people">Friendly with people</label>
+                        </div>
+                        <div class="behavior-checkbox">
+                            <input type="checkbox" id="leash-trained">
+                            <label for="leash-trained">Leash trained</label>
+                        </div>
+                        <div class="behavior-checkbox">
+                            <input type="checkbox" id="special-needs">
+                            <label for="special-needs">Has special needs</label>
+                        </div>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="previousStep()">← Back</button>
+                        <button class="btn btn-premium" onclick="nextStep('4b')">Continue →</button>
+                    </div>
+                </div>
+
+                <!-- STEP 3A/4B: Add-ons Selection -->
+                <div class="step-screen" id="step-addons">
+                    <h2 class="screen-title">Enhance Tommy's Care</h2>
+                    <p class="screen-subtitle">Add optional wellness services</p>
+
+                    <div class="addon-checkbox" onclick="toggleAddon(this)" data-addon="basic" data-price="799">
+                        <input type="checkbox" onclick="event.stopPropagation();">
+                        <div class="addon-details">
+                            <h4>Basic Wellness Add-on <span style="color: #F57C00; float: right;">+₹799</span></h4>
+                            <ul>
+                                <li>• Monthly vet consultation</li>
+                                <li>• Training tips & guidance</li>
+                                <li>• Pet care reminders</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="addon-checkbox" onclick="toggleAddon(this)" data-addon="premium" data-price="1499">
+                        <input type="checkbox" onclick="event.stopPropagation();">
+                        <div class="addon-details">
+                            <h4>⭐ Premium Care Add-on <span style="color: #F57C00; float: right;">+₹1,499</span></h4>
+                            <ul>
+                                <li>• 1 Professional grooming session</li>
+                                <li>• 1 Full vet consultation</li>
+                                <li>• 1 Refresh training session</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="previousStep()">← Back</button>
+                        <button class="btn btn-outline" onclick="skipAddons()">Skip</button>
+                        <button class="btn btn-success" onclick="nextToCheckout()">Add to Package →</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Checkout -->
+                <div class="step-screen" id="step-checkout">
+                    <h2 class="screen-title">Checkout Summary</h2>
+                    <p class="screen-subtitle">Review your package before payment</p>
+
+                    <div class="checkout-summary">
+                        <div class="checkout-line">
+                            <span>Walking Package:</span>
+                            <span id="checkoutWalking">₹0</span>
+                        </div>
+                        <div class="checkout-line" id="checkoutAddonLine" style="display: none;">
+                            <span>Add-ons:</span>
+                            <span id="checkoutAddons">₹0</span>
+                        </div>
+                        <div class="checkout-line total">
+                            <span>Total:</span>
+                            <span id="checkoutTotal">₹0</span>
+                        </div>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="previousStep()">← Back</button>
+                        <button class="btn btn-success" onclick="processPayment()" style="font-size: 18px; padding: 15px 40px;">💳 Proceed to Payment</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Payment Success (Standard) -->
+                <div class="step-screen" id="step-payment-standard">
+                    <div class="success-animation">
+                        <div class="success-icon">✅</div>
+                        <h2 style="color: #4CAF50; margin: 20px 0;">Booking Confirmed!</h2>
+                        <p style="font-size: 18px; color: #666;">Your request is now live</p>
+                        <p style="color: #666;">Walkers will send bids soon. You'll be notified!</p>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-primary" onclick="nextStep('bids')" style="margin: 20px auto; display: block;">View Bids →</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Bids Received -->
+                <div class="step-screen" id="step-bids">
+                    <h2 class="screen-title">Walkers Interested in Tommy</h2>
+                    <p class="screen-subtitle">3 walkers have sent their proposals</p>
+
+                    <div class="walker-card" onclick="selectWalker('Rahul')">
+                        <div class="walker-avatar">👨</div>
+                        <div class="walker-info" style="flex: 1;">
+                            <h4>Rahul Kumar</h4>
+                            <div class="walker-rating">⭐ 4.8 (127 reviews)</div>
+                            <p style="color: #666; font-size: 14px;">5+ years experience • 2km away</p>
+                            <p style="color: #666; font-size: 13px; margin-top: 5px;">"I specialize in large breeds and high-energy dogs"</p>
+                        </div>
+                        <div class="walker-price">₹6,500</div>
+                    </div>
+
+                    <div class="walker-card" onclick="selectWalker('Priya')">
+                        <div class="walker-avatar">👩</div>
+                        <div class="walker-info" style="flex: 1;">
+                            <h4>Priya Sharma</h4>
+                            <div class="walker-rating">⭐ 4.9 (203 reviews)</div>
+                            <p style="color: #666; font-size: 14px;">8+ years experience • 1.5km away</p>
+                            <p style="color: #666; font-size: 13px; margin-top: 5px;">"Certified trainer, great with Labradors!"</p>
+                        </div>
+                        <div class="walker-price">₹7,000</div>
+                    </div>
+
+                    <div class="walker-card" onclick="selectWalker('Amit')">
+                        <div class="walker-avatar">👨‍🦱</div>
+                        <div class="walker-info" style="flex: 1;">
+                            <h4>Amit Patel</h4>
+                            <div class="walker-rating">⭐ 4.7 (89 reviews)</div>
+                            <p style="color: #666; font-size: 14px;">3+ years experience • 3km away</p>
+                            <p style="color: #666; font-size: 13px; margin-top: 5px;">"Passionate about pet fitness and health"</p>
+                        </div>
+                        <div class="walker-price">₹6,200</div>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="showUpsell2()">🤔 Need Help Choosing?</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Payment Success (Premium) -->
+                <div class="step-screen" id="step-payment-premium">
+                    <div class="success-animation">
+                        <div class="success-icon">✅</div>
+                        <h2 style="color: #4CAF50; margin: 20px 0;">Booking Confirmed!</h2>
+                        <p style="font-size: 18px; color: #666;">We're matching the perfect walker for Tommy</p>
+                        <p style="color: #666;">You'll hear from us within 24 hours!</p>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-premium" onclick="nextStep('walker-assigned')" style="margin: 20px auto; display: block;">See Walker Assignment →</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Walker Assigned (Premium) -->
+                <div class="step-screen" id="step-walker-assigned">
+                    <h2 class="screen-title">🎉 Meet Tommy's Walker!</h2>
+                    <p class="screen-subtitle">We've found the perfect match based on Tommy's profile</p>
+
+                    <div class="walker-card" style="border-color: #4CAF50; background: #E8F5E9;">
+                        <div class="walker-avatar">👩</div>
+                        <div class="walker-info" style="flex: 1;">
+                            <h4>Priya Sharma</h4>
+                            <div class="walker-rating">⭐ 4.9 (203 reviews)</div>
+                            <p style="color: #666; font-size: 14px;">8+ years experience • 1.5km away</p>
+                            <p style="color: #666; font-size: 14px; margin-top: 8px;">📍 Specializes in Labradors</p>
+                        </div>
+                    </div>
+
+                    <div style="background: #FFF3E0; padding: 25px; border-radius: 10px; margin: 20px 0;">
+                        <h4 style="margin-bottom: 15px; color: #F57C00;">Why we matched Priya:</h4>
+                        <ul style="list-style: none;">
+                            <li style="padding: 8px 0;">✓ <strong>Experience with large dogs:</strong> 8+ years working with Labradors</li>
+                            <li style="padding: 8px 0;">✓ <strong>High energy match:</strong> Perfect for Tommy's activity level</li>
+                            <li style="padding: 8px 0;">✓ <strong>Available your times:</strong> Flexible morning & evening slots</li>
+                            <li style="padding: 8px 0;">✓ <strong>Top rated:</strong> 4.9/5.0 from 200+ clients</li>
+                        </ul>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline">Request Change</button>
+                        <button class="btn btn-success" onclick="nextStep('service-active')">Accept Walker ✓</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Service Active -->
+                <div class="step-screen" id="step-service-active">
+                    <div class="success-animation">
+                        <div class="success-icon" style="animation: none;">🐕</div>
+                        <h2 style="color: #00796B; margin: 20px 0;">Service Active</h2>
+                        <p style="font-size: 18px; color: #666;">Tommy's 30-day walking package is now active!</p>
+                    </div>
+
+                    <div style="background: #B2DFDB; padding: 25px; border-radius: 10px; margin: 30px 0;">
+                        <h4 style="margin-bottom: 15px;">📅 Active Service Includes:</h4>
+                        <ul style="list-style: none;">
+                            <li style="padding: 8px 0;">✓ Daily/scheduled walks as per package</li>
+                            <li style="padding: 8px 0;">✓ Real-time updates & GPS tracking</li>
+                            <li style="padding: 8px 0;">✓ Photo reports after each walk</li>
+                            <li style="padding: 8px 0;" id="premiumCheckIn" style="display: none;">✓ Monthly check-in call with coordinator</li>
+                            <li style="padding: 8px 0;">✓ Add-on services as scheduled</li>
+                        </ul>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-primary" onclick="nextStep('renewal')" style="margin: 20px auto; display: block;">⏩ Fast Forward to Day 25 (Renewal)</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Renewal -->
+                <div class="step-screen" id="step-renewal">
+                    <h2 class="screen-title">🔔 Tommy's Care Renewal</h2>
+                    <p class="screen-subtitle">Your package expires in 5 days</p>
+
+                    <div style="background: #FFCCBC; padding: 25px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #E64A19;">
+                        <h4 style="margin-bottom: 15px;">📦 Current Package:</h4>
+                        <div class="checkout-line">
+                            <span>Walking Package:</span>
+                            <span id="renewalWalking">₹8,500</span>
+                        </div>
+                        <div class="checkout-line" id="renewalAddonLine">
+                            <span>Add-ons:</span>
+                            <span id="renewalAddons">₹1,499</span>
+                        </div>
+                    </div>
+
+                    <div class="renewal-usage">
+                        <h4 style="margin-bottom: 15px; color: #2E7D32;">Add-on Usage This Month:</h4>
+                        <div class="usage-item">
+                            <span>☑ 1 Grooming session</span>
+                            <span class="status-badge used">✅ Used</span>
+                        </div>
+                        <div class="usage-item">
+                            <span>☑ 1 Vet consultation</span>
+                            <span class="status-badge used">✅ Used</span>
+                        </div>
+                        <div class="usage-item">
+                            <span>☑ 1 Training session</span>
+                            <span class="status-badge pending">⏳ Remaining</span>
+                        </div>
+                    </div>
+
+                    <div class="checkout-summary">
+                        <div class="checkout-line total">
+                            <span>Next billing:</span>
+                            <span id="renewalTotal">₹9,999</span>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="showUpsell3()" style="width: 100%; margin: 20px 0;">💡 See Smart Suggestions</button>
+
+                    <div class="navigation" style="justify-content: space-around;">
+                        <button class="btn btn-success" onclick="autoRenew()">✅ Continue Same Package</button>
+                        <button class="btn btn-outline" onclick="modifyPackage()">⚙️ Modify Package</button>
+                        <button class="btn btn-outline" style="border-color: #f44336; color: #f44336;">❌ Cancel Service</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Auto Renewed -->
+                <div class="step-screen" id="step-renewed">
+                    <div class="success-animation">
+                        <div class="success-icon">🔄</div>
+                        <h2 style="color: #4CAF50; margin: 20px 0;">Package Renewed!</h2>
+                        <p style="font-size: 18px; color: #666;">Tommy's walking service continues</p>
+                    </div>
+
+                    <div class="checkout-summary">
+                        <div class="checkout-line">
+                            <span>Package:</span>
+                            <span id="finalPackage">Premium Walking (5 days)</span>
+                        </div>
+                        <div class="checkout-line">
+                            <span>Add-ons:</span>
+                            <span id="finalAddons">Premium Care Pack</span>
+                        </div>
+                        <div class="checkout-line total">
+                            <span>Amount:</span>
+                            <span id="finalTotal">₹9,999</span>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px; color: #666;">
+                            Next billing: <strong>1st February 2024</strong>
+                        </div>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-primary" onclick="resetFlow()" style="margin: 30px auto; display: block; font-size: 18px;">🎉 Complete Flow - Start Over</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Upsell Modal 1 -->
+        <div class="upsell-modal" id="upsellModal1">
+            <div class="upsell-content">
+                <button class="close-modal" onclick="closeUpsell1()">×</button>
+                <h2>💡 Not sure whom to choose?</h2>
+                <p>Let Petsfolio recommend the best walker for Tommy based on:</p>
+                <div class="upsell-features">
+                    <ul>
+                        <li>🐕 Dog breed compatibility</li>
+                        <li>🎯 Behavior matching</li>
+                        <li>⚡ Temperament & energy level</li>
+                        <li>📍 Activity level requirements</li>
+                    </ul>
+                </div>
+                <p style="font-weight: bold; color: #F57C00; margin: 20px 0;">Premium Walking Available</p>
+                <button class="btn btn-premium" onclick="upgradeToPremium()" style="width: 100%; margin-bottom: 10px;">⭐ Upgrade to Premium</button>
+                <button class="btn btn-outline" onclick="closeUpsell1()" style="width: 100%;">Continue with Standard</button>
+            </div>
+        </div>
+
+        <!-- Upsell Modal 2 -->
+        <div class="upsell-modal" id="upsellModal2">
+            <div class="upsell-content">
+                <button class="close-modal" onclick="closeUpsell2()">×</button>
+                <h2>🤔 Feeling confused?</h2>
+                <p>Let Petsfolio suggest the best walker for Tommy!</p>
+                <div class="upsell-features">
+                    <ul>
+                        <li>✓ We'll evaluate all walkers for you</li>
+                        <li>✓ Coordinate schedules automatically</li>
+                        <li>✓ Replace walker if needed</li>
+                        <li>✓ Dedicated support coordinator</li>
+                    </ul>
+                </div>
+                <p style="font-weight: bold; color: #F57C00; margin: 20px 0;">Switch to Premium - One-time upgrade!</p>
+                <button class="btn btn-premium" onclick="switchToPremiumFromBids()" style="width: 100%; margin-bottom: 10px;">⭐ Switch to Premium</button>
+                <button class="btn btn-outline" onclick="closeUpsell2()" style="width: 100%;">I'll select manually</button>
+            </div>
+        </div>
+
+        <!-- Upsell Modal 3 -->
+        <div class="upsell-modal" id="upsellModal3">
+            <div class="upsell-content">
+                <button class="close-modal" onclick="closeUpsell3()">×</button>
+                <h2>💡 Smart Suggestion</h2>
+                <p style="font-size: 18px; color: #F57C00; font-weight: bold;">🎯 Add Behavior Training</p>
+                <p style="margin: 15px 0;">Only <strong>+₹2,499/month</strong></p>
+                <div class="upsell-features">
+                    <p style="margin-bottom: 10px;"><strong>Why this recommendation?</strong></p>
+                    <ul>
+                        <li>📊 Tommy shows high energy levels</li>
+                        <li>🎓 Advanced training can help with leash skills</li>
+                        <li>🐕 Better social behavior with other dogs</li>
+                        <li>⭐ 90% of clients see improvement in 30 days</li>
+                    </ul>
+                </div>
+                <button class="btn btn-premium" onclick="addTraining()" style="width: 100%; margin: 15px 0 10px 0;">✅ Add to Package</button>
+                <button class="btn btn-outline" onclick="closeUpsell3()" style="width: 100%;">Not now</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentStep = 0;
+        let selectedPath = '';
+        let selectedPackagePrice = 0;
+        let selectedPackageName = '';
+        let selectedAddons = [];
+        let totalAddonPrice = 0;
+
+        const steps = {
+            standard: ['Choose Service', 'Choose Experience', 'Select Package', 'Add-ons', 'Checkout', 'Payment', 'Bids', 'Service Active', 'Renewal', 'Renewed'],
+            premium: ['Choose Service', 'Choose Experience', 'Select Package', 'Dog Profile', 'Add-ons', 'Checkout', 'Payment', 'Walker Assigned', 'Service Active', 'Renewal', 'Renewed']
+        };
+
+        function nextStep(stepId) {
+            // Hide current step
+            document.querySelectorAll('.step-screen').forEach(el => el.classList.remove('active'));
+            
+            // Show next step
+            const nextStepEl = document.getElementById(`step-${stepId}`);
+            if (nextStepEl) {
+                nextStepEl.classList.add('active');
+                updateProgress();
+            }
+        }
+
+        function previousStep() {
+            // Simple back navigation - you can enhance this
+            window.history.back();
+        }
+
+        function selectPath(path) {
+            selectedPath = path;
+            
+            // Update path indicator
+            const pathBadge = document.getElementById('currentPath');
+            pathBadge.style.display = 'block';
+            pathBadge.textContent = path === 'standard' ? 'Standard Path' : 'Premium Path ⭐';
+            pathBadge.className = `path-badge ${path}`;
+            
+            // Navigate to appropriate package selection
+            if (path === 'standard') {
+                nextStep('2a');
+            } else {
+                nextStep('2b');
+                // Show premium check-in in service active
+                setTimeout(() => {
+                    const premiumCheckIn = document.getElementById('premiumCheckIn');
+                    if (premiumCheckIn) premiumCheckIn.style.display = 'block';
+                }, 100);
+            }
+            
+            updateProgress();
+        }
+
+        function selectPackage(element) {
+            // Remove previous selection
+            document.querySelectorAll('.package-option').forEach(el => el.classList.remove('selected'));
+            
+            // Add selection to clicked element
+            element.classList.add('selected');
+            
+            // Store package info
+            selectedPackagePrice = parseInt(element.dataset.price);
+            selectedPackageName = element.querySelector('h4').textContent;
+            
+            // Enable next button
+            const nextBtn = document.getElementById('packageNextBtn') || document.getElementById('packageNextBtn2');
+            if (nextBtn) nextBtn.disabled = false;
+        }
+
+        function showUpsell1() {
+            document.getElementById('upsellModal1').classList.add('active');
+        }
+
+        function closeUpsell1() {
+            document.getElementById('upsellModal1').classList.remove('active');
+            nextStep('addons');
+        }
+
+        function upgradeToPremium() {
+            closeUpsell1();
+            selectedPath = 'premium';
+            const pathBadge = document.getElementById('currentPath');
+            pathBadge.textContent = 'Premium Path ⭐';
+            pathBadge.className = 'path-badge premium';
+            nextStep('2b');
+        }
+
+        function showUpsell2() {
+            document.getElementById('upsellModal2').classList.add('active');
+        }
+
+        function closeUpsell2() {
+            document.getElementById('upsellModal2').classList.remove('active');
+        }
+
+        function switchToPremiumFromBids() {
+            closeUpsell2();
+            alert('Upgrading to Premium! Your coordinator will contact you within 24 hours.');
+            nextStep('walker-assigned');
+        }
+
+        function selectWalker(name) {
+            if (confirm(`Confirm ${name} as Tommy's walker?`)) {
+                nextStep('service-active');
+            }
+        }
+
+        function toggleAddon(element) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                element.classList.add('selected');
+                selectedAddons.push({
+                    name: element.dataset.addon,
+                    price: parseInt(element.dataset.price)
+                });
+            } else {
+                element.classList.remove('selected');
+                selectedAddons = selectedAddons.filter(a => a.name !== element.dataset.addon);
+            }
+            
+            totalAddonPrice = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
+        }
+
+        function skipAddons() {
+            selectedAddons = [];
+            totalAddonPrice = 0;
+            nextToCheckout();
+        }
+
+        function nextToCheckout() {
+            // Update checkout summary
+            document.getElementById('checkoutWalking').textContent = `₹${selectedPackagePrice.toLocaleString()}`;
+            
+            if (totalAddonPrice > 0) {
+                document.getElementById('checkoutAddonLine').style.display = 'flex';
+                document.getElementById('checkoutAddons').textContent = `₹${totalAddonPrice.toLocaleString()}`;
+            }
+            
+            const total = selectedPackagePrice + totalAddonPrice;
+            document.getElementById('checkoutTotal').textContent = `₹${total.toLocaleString()}`;
+            
+            nextStep('checkout');
+        }
+
+        function processPayment() {
+            // Simulate payment processing
+            setTimeout(() => {
+                if (selectedPath === 'standard') {
+                    nextStep('payment-standard');
+                } else {
+                    nextStep('payment-premium');
+                }
+            }, 500);
+        }
+
+        function showUpsell3() {
+            document.getElementById('upsellModal3').classList.add('active');
+        }
+
+        function closeUpsell3() {
+            document.getElementById('upsellModal3').classList.remove('active');
+        }
+
+        function addTraining() {
+            closeUpsell3();
+            alert('Behavior Training added! New total: ₹12,498/month');
+            autoRenew();
+        }
+
+        function autoRenew() {
+            // Update renewal summary
+            const total = selectedPackagePrice + totalAddonPrice;
+            document.getElementById('finalPackage').textContent = selectedPackageName;
+            document.getElementById('finalAddons').textContent = selectedAddons.map(a => a.name).join(', ') || 'None';
+            document.getElementById('finalTotal').textContent = `₹${total.toLocaleString()}`;
+            
+            nextStep('renewed');
+        }
+
+        function modifyPackage() {
+            alert('Package modification feature - redirecting to package selection...');
+            nextStep('2' + (selectedPath === 'standard' ? 'a' : 'b'));
+        }
+
+        function updateProgress() {
+            const totalSteps = selectedPath ? steps[selectedPath].length : 10;
+            const currentStepIndex = getCurrentStepIndex();
+            const progress = ((currentStepIndex + 1) / totalSteps) * 100;
+            
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        function getCurrentStepIndex() {
+            const activeStep = document.querySelector('.step-screen.active');
+            if (!activeStep) return 0;
+            
+            const stepMap = {
+                'step-0': 0,
+                'step-1': 1,
+                'step-2a': 2,
+                'step-2b': 2,
+                'step-3b': 3,
+                'step-addons': selectedPath === 'premium' ? 4 : 3,
+                'step-checkout': selectedPath === 'premium' ? 5 : 4,
+                'step-payment-standard': 5,
+                'step-payment-premium': 6,
+                'step-bids': 6,
+                'step-walker-assigned': 7,
+                'step-service-active': selectedPath === 'premium' ? 8 : 7,
+                'step-renewal': selectedPath === 'premium' ? 9 : 8,
+                'step-renewed': selectedPath === 'premium' ? 10 : 9
+            };
+            
+            return stepMap[activeStep.id] || 0;
+        }
+
+        function resetFlow() {
+            location.reload();
+        }
+
+        // Event listeners
+        document.getElementById('resetBtn').addEventListener('click', resetFlow);
+
+        // Initialize
+        updateProgress();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1438 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport="width=device-width, initial-scale=1.0">
+    <title>Petsfolio - Walking & Grooming Services</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .path-indicator {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .path-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .path-badge.standard {
+            background: #E3F2FD;
+            color: #1976D2;
+            border: 2px solid #1976D2;
+        }
+
+        .path-badge.premium {
+            background: #FFF3E0;
+            color: #F57C00;
+            border: 2px solid #F57C00;
+        }
+
+        .path-badge.grooming {
+            background: #F3E5F5;
+            color: #7B1FA2;
+            border: 2px solid #7B1FA2;
+        }
+
+        .path-badge.subscription {
+            background: #E8F5E9;
+            color: #388E3C;
+            border: 2px solid #388E3C;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 30px;
+        }
+
+        .sidebar {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 20px;
+            color: #667eea;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .step-list {
+            list-style: none;
+        }
+
+        .step-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .step-item:hover {
+            background: #f5f5f5;
+        }
+
+        .step-item.active {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        .step-item.completed {
+            background: #C8E6C9;
+            color: #2E7D32;
+        }
+
+        .step-item .step-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .step-item.active .step-icon {
+            background: white;
+            color: #667eea;
+        }
+
+        .step-item.completed .step-icon {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .flow-area {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-height: 600px;
+            position: relative;
+        }
+
+        .step-screen {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .step-screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .screen-title {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .screen-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .card.standard {
+            border-color: #1976D2;
+            background: #E3F2FD;
+        }
+
+        .card.standard:hover {
+            background: #BBDEFB;
+        }
+
+        .card.premium {
+            border-color: #F57C00;
+            background: #FFF3E0;
+        }
+
+        .card.premium:hover {
+            background: #FFE0B2;
+        }
+
+        .card.grooming {
+            border-color: #7B1FA2;
+            background: #F3E5F5;
+        }
+
+        .card.grooming:hover {
+            background: #E1BEE7;
+        }
+
+        .card.subscription {
+            border-color: #388E3C;
+            background: #E8F5E9;
+        }
+
+        .card.subscription:hover {
+            background: #C8E6C9;
+        }
+
+        .card.premium::before,
+        .card.subscription::before {
+            content: "⭐ RECOMMENDED";
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: #F57C00;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .card.subscription::before {
+            background: #388E3C;
+        }
+
+        .card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .card ul {
+            list-style: none;
+            margin: 15px 0;
+        }
+
+        .card li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card li::before {
+            content: "✔";
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-block;
+            text-align: center;
+            margin: 10px 10px 10px 0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-standard {
+            background: #1976D2;
+            color: white;
+        }
+
+        .btn-premium {
+            background: #F57C00;
+            color: white;
+        }
+
+        .btn-grooming {
+            background: #7B1FA2;
+            color: white;
+        }
+
+        .btn-subscription {
+            background: #388E3C;
+            color: white;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        .package-option {
+            border: 2px solid #e0e0e0;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .package-option:hover {
+            border-color: #667eea;
+            background: #f5f5f5;
+        }
+
+        .package-option.selected {
+            border-color: #4CAF50;
+            background: #E8F5E9;
+            border-width: 3px;
+        }
+
+        .package-option .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #F57C00;
+        }
+
+        .subscription-recall {
+            background: linear-gradient(135deg, #FFF9C4 0%, #FFF3E0 100%);
+            border: 3px dashed #F9A825;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .subscription-recall::before {
+            content: "💡 SMART SUGGESTION";
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #F9A825;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .subscription-recall h3 {
+            color: #F57C00;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        .subscription-recall p {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .subscription-recall ul {
+            list-style: none;
+            margin: 15px 0;
+        }
+
+        .subscription-recall li {
+            padding: 5px 0;
+            color: #333;
+        }
+
+        .subscription-recall li::before {
+            content: "✔";
+            color: #4CAF50;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .addon-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .addon-checkbox:hover {
+            border-color: #667eea;
+            background: #f5f5f5;
+        }
+
+        .addon-checkbox.selected {
+            border-color: #4CAF50;
+            background: #E8F5E9;
+        }
+
+        .addon-checkbox input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .addon-details h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .addon-details ul {
+            list-style: none;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .addon-details li {
+            padding: 3px 0;
+        }
+
+        .upsell-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .upsell-modal.active {
+            display: flex;
+        }
+
+        .upsell-content {
+            background: #FFF9C4;
+            border: 4px dashed #F9A825;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+            animation: slideUp 0.5s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .upsell-content h2 {
+            color: #F57C00;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .upsell-content p {
+            color: #333;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .upsell-features {
+            text-align: left;
+            margin: 20px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .upsell-features li {
+            padding: 8px 0;
+            color: #333;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .checkout-summary {
+            background: #f5f5f5;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .checkout-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .checkout-line.total {
+            border-bottom: none;
+            border-top: 3px solid #333;
+            font-size: 24px;
+            font-weight: bold;
+            color: #F57C00;
+            margin-top: 10px;
+        }
+
+        .walker-card, .groomer-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            display: flex;
+            gap: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .walker-card:hover, .groomer-card:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .walker-avatar, .groomer-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .walker-info, .groomer-info {
+            flex: 1;
+        }
+
+        .walker-info h4, .groomer-info h4 {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .walker-rating, .groomer-rating {
+            color: #F57C00;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .walker-price, .groomer-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .navigation {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .success-animation {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .post-service-popup {
+            position: fixed;
+            bottom: -400px;
+            right: 30px;
+            width: 380px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 30px;
+            transition: bottom 0.5s ease;
+            z-index: 999;
+            border: 3px solid #4CAF50;
+        }
+
+        .post-service-popup.show {
+            bottom: 30px;
+        }
+
+        .post-service-popup .close-popup {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .post-service-popup h3 {
+            color: #388E3C;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .post-service-popup p {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .flow-area {
+                padding: 20px;
+            }
+
+            .screen-title {
+                font-size: 24px;
+            }
+
+            .upsell-content {
+                margin: 20px;
+                padding: 30px;
+            }
+
+            .post-service-popup {
+                right: 20px;
+                left: 20px;
+                width: auto;
+            }
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        @media (max-width: 768px) {
+            .service-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🐾 Petsfolio Services</h1>
+            <div class="path-indicator">
+                <span id="serviceType" class="path-badge" style="display: none;"></span>
+                <span id="currentPath" class="path-badge" style="display: none;"></span>
+                <button id="resetBtn" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">🔄 Restart</button>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 5%;"></div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar Navigation -->
+            <div class="sidebar">
+                <h3>📋 Flow Steps</h3>
+                <ul class="step-list" id="stepList">
+                    <li class="step-item active" data-step="0">
+                        <span class="step-icon">1</span>
+                        <span>Choose Service</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Flow Area -->
+            <div class="flow-area">
+                <!-- STEP 0: Choose Service -->
+                <div class="step-screen active" id="step-0">
+                    <h2 class="screen-title">Choose Your Service</h2>
+                    <p class="screen-subtitle">What service does Tommy need today?</p>
+
+                    <div class="service-grid">
+                        <div class="card standard" onclick="selectService('walking')">
+                            <h3>🐕 Dog Walking</h3>
+                            <p>Professional walking services for your furry friend</p>
+                            <ul style="margin-top: 15px;">
+                                <li>Daily/scheduled walks</li>
+                                <li>Expert walkers</li>
+                                <li>Real-time updates</li>
+                            </ul>
+                            <button class="btn btn-standard" style="margin-top: 15px;">Choose Walking</button>
+                        </div>
+
+                        <div class="card grooming" onclick="selectService('grooming')">
+                            <h3>✂️ Pet Grooming</h3>
+                            <p>Professional grooming for hygiene, comfort & wellness</p>
+                            <ul style="margin-top: 15px;">
+                                <li>Professional grooming</li>
+                                <li>Wellness care</li>
+                                <li>Flexible scheduling</li>
+                            </ul>
+                            <button class="btn btn-grooming" style="margin-top: 15px;">Choose Grooming</button>
+                        </div>
+                    </div>
+
+                    <div class="card" style="opacity: 0.5; cursor: not-allowed;">
+                        <h3>🏠 Pet Sitting</h3>
+                        <p>Coming soon...</p>
+                    </div>
+                </div>
+
+                <!-- WALKING SERVICE FLOWS (from previous code) -->
+                <!-- STEP 1W: Walking Experience Choice -->
+                <div class="step-screen" id="step-1w">
+                    <h2 class="screen-title">Choose Your Walking Experience</h2>
+                    <p class="screen-subtitle">How would you like to find Tommy's walker?</p>
+
+                    <div class="card standard" onclick="selectPath('standard')">
+                        <h3>1️⃣ Standard Walking Package</h3>
+                        <p style="margin: 10px 0; color: #666;">Choose your preferred walker</p>
+                        <ul>
+                            <li>Compare walkers</li>
+                            <li>Receive bids</li>
+                            <li>Select based on rating, price & experience</li>
+                        </ul>
+                        <p style="margin-top: 15px; font-weight: bold; color: #1976D2;">Best for: Experienced pet parents</p>
+                        <button class="btn btn-standard" style="margin-top: 15px;">Choose Standard</button>
+                    </div>
+
+                    <div class="card premium" onclick="selectPath('premium')">
+                        <h3>⭐ 2️⃣ Petsfolio Premium Walking</h3>
+                        <p style="margin: 10px 0; color: #666;">We find the right walker for Tommy</p>
+                        <ul>
+                            <li>Personalized walker recommendation</li>
+                            <li>Behaviour compatibility matching</li>
+                            <li>Dedicated coordination</li>
+                            <li>Replacement support if required</li>
+                            <li>Monthly follow-up by Petsfolio</li>
+                        </ul>
+                        <p style="margin-top: 15px; font-weight: bold; color: #F57C00;">Premium assistance included</p>
+                        <button class="btn btn-premium" style="margin-top: 15px;">Choose Premium ⭐</button>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="backToServiceSelection()">← Back to Services</button>
+                    </div>
+                </div>
+
+                <!-- GROOMING SERVICE FLOWS -->
+                <!-- STEP 1G: Grooming Landing/Experience Choice -->
+                <div class="step-screen" id="step-1g">
+                    <h2 class="screen-title">🐾 Pet Grooming</h2>
+                    <p class="screen-subtitle">Professional grooming services tailored to your pet's hygiene, comfort, and wellness</p>
+
+                    <div class="card grooming" onclick="selectGroomingPath('regular')">
+                        <h3>Regular Grooming</h3>
+                        <p style="margin: 10px 0; color: #666;">Book a one-time grooming service and choose from available groomers</p>
+                        <ul>
+                            <li>One-time booking</li>
+                            <li>Compare bids & ratings</li>
+                            <li>Flexible scheduling</li>
+                        </ul>
+                        <p style="margin-top: 15px; font-weight: bold; color: #7B1FA2;">Pay per service</p>
+                        <button class="btn btn-grooming" style="margin-top: 15px;">Choose Regular Grooming</button>
+                    </div>
+
+                    <div class="card subscription" onclick="selectGroomingPath('subscription')">
+                        <h3>⭐ Monthly Grooming Care Subscription</h3>
+                        <p style="margin: 10px 0; color: #666;">A complete monthly pet wellness package with grooming, wellness support, and dedicated assistance</p>
+                        <ul>
+                            <li>1 Grooming Session / month</li>
+                            <li>1 Vet Consultation / month</li>
+                            <li>1 Refresh Training Session / month</li>
+                            <li>Dedicated Petsfolio Support</li>
+                            <li>Priority booking assistance</li>
+                        </ul>
+                        <p style="margin-top: 15px; font-weight: bold; color: #388E3C;">Complete wellness plan</p>
+                        <button class="btn btn-subscription" style="margin-top: 15px;">View Care Plans ⭐</button>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="backToServiceSelection()">← Back to Services</button>
+                    </div>
+                </div>
+
+                <!-- STEP 2G-REGULAR: Choose Grooming Package (One-time) -->
+                <div class="step-screen" id="step-2g-regular">
+                    <h2 class="screen-title">Choose Grooming Package</h2>
+                    <p class="screen-subtitle">Select the grooming service Tommy needs</p>
+
+                    <div class="package-option" data-package="basic-groom" data-price="799" onclick="selectGroomingPackage(this)">
+                        <div>
+                            <h4 style="font-size: 18px; margin-bottom: 5px;">Basic Grooming</h4>
+                            <p style="color: #666; font-size: 14px;">Bath + Cleaning</p>
+                        </div>
+                        <div class="price">₹799</div>
+                    </div>
+
+                    <div class="package-option" data-package="standard-groom" data-price="1299" onclick="selectGroomingPackage(this)">
+                        <div>
+                            <h4 style="font-size: 18px; margin-bottom: 5px;">Standard Grooming</h4>
+                            <p style="color: #666; font-size: 14px;">Bath + Nail + Ear Cleaning</p>
+                        </div>
+                        <div class="price">₹1,299</div>
+                    </div>
+
+                    <div class="package-option" data-package="premium-groom" data-price="1999" onclick="selectGroomingPackage(this)">
+                        <div>
+                            <h4 style="font-size: 18px; margin-bottom: 5px;">Premium Grooming</h4>
+                            <p style="color: #666; font-size: 14px;">Complete grooming session + Spa treatment</p>
+                        </div>
+                        <div class="price">₹1,999</div>
+                    </div>
+
+                    <!-- SUBSCRIPTION RECALL #1 -->
+                    <div class="subscription-recall">
+                        <h3>⭐ Groom monthly?</h3>
+                        <p>Save time and keep Tommy healthy with the <strong>Petsfolio Grooming Care Plan</strong>.</p>
+                        <ul>
+                            <li>Monthly grooming</li>
+                            <li>Vet consultation</li>
+                            <li>Refresh training support</li>
+                            <li>Dedicated assistance</li>
+                        </ul>
+                        <button class="btn btn-subscription" onclick="switchToSubscription()">View Subscription Plans →</button>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="previousStep()">← Back</button>
+                        <button class="btn btn-grooming" id="groomingPackageBtn" onclick="nextStep('grooming-checkout')" disabled>Continue →</button>
+                    </div>
+                </div>
+
+                <!-- STEP 2G-SUBSCRIPTION: Choose Care Plan -->
+                <div class="step-screen" id="step-2g-subscription">
+                    <h2 class="screen-title">Choose Your Grooming Care Plan</h2>
+                    <p class="screen-subtitle">Monthly wellness subscription for Tommy</p>
+
+                    <div class="card subscription" onclick="selectCarePlan('basic', 1499)" style="cursor: pointer;">
+                        <h3>⭐ Basic Care Plan</h3>
+                        <p style="font-size: 28px; color: #388E3C; font-weight: bold; margin: 15px 0;">₹1,499<span style="font-size: 16px; color: #666;">/month</span></p>
+                        <ul>
+                            <li>1 Grooming Session</li>
+                            <li>Vet Consultation</li>
+                            <li>Training Guidance / Refresh Tips</li>
+                            <li>Priority Support</li>
+                        </ul>
+                        <button class="btn btn-subscription" style="margin-top: 15px; width: 100%;">Choose Basic Plan</button>
+                    </div>
+
+                    <div class="card" style="border-color: #7B1FA2; background: #F3E5F5;" onclick="selectCarePlan('premium', 2499)">
+                        <h3>Premium Care Plan</h3>
+                        <p style="font-size: 28px; color: #7B1FA2; font-weight: bold; margin: 15px 0;">₹2,499<span style="font-size: 16px; color: #666;">/month</span></p>
+                        <ul>
+                            <li>Premium Grooming</li>
+                            <li>Vet Consultation</li>
+                            <li>Refresh Training Session</li>
+                            <li>Dedicated Support</li>
+                            <li>Priority booking</li>
+                        </ul>
+                        <button class="btn btn-grooming" style="margin-top: 15px; width: 100%;">Choose Premium Plan</button>
+                    </div>
+
+                    <div style="background: #FFF3E0; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #F57C00;">
+                        <h4 style="margin-bottom: 10px;">💡 Why Subscribe?</h4>
+                        <ul style="list-style: none;">
+                            <li>✓ Save ₹500+ per month vs one-time bookings</li>
+                            <li>✓ Never miss Tommy's grooming schedule</li>
+                            <li>✓ Comprehensive wellness care included</li>
+                            <li>✓ Cancel anytime, no commitment</li>
+                        </ul>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="previousStep()">← Back</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Grooming Checkout (One-time) -->
+                <div class="step-screen" id="step-grooming-checkout">
+                    <h2 class="screen-title">Request Grooming Service</h2>
+                    <p class="screen-subtitle">Review and submit your grooming request</p>
+
+                    <div class="checkout-summary">
+                        <div class="checkout-line">
+                            <span>Service:</span>
+                            <span>One-time Grooming</span>
+                        </div>
+                        <div class="checkout-line">
+                            <span>Package:</span>
+                            <span id="groomingPackageName">-</span>
+                        </div>
+                        <div class="checkout-line total">
+                            <span>Total:</span>
+                            <span id="groomingTotal">₹0</span>
+                        </div>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="previousStep()">← Back</button>
+                        <button class="btn btn-success" onclick="submitGroomingRequest()" style="font-size: 18px; padding: 15px 40px;">Submit Request →</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Grooming Bids Received -->
+                <div class="step-screen" id="step-grooming-bids">
+                    <h2 class="screen-title">Groomers Interested</h2>
+                    <p class="screen-subtitle">3 professional groomers are available for Tommy</p>
+
+                    <div class="groomer-card" onclick="selectGroomer('Meera')">
+                        <div class="groomer-avatar">👩</div>
+                        <div class="groomer-info">
+                            <h4>Meera Singh</h4>
+                            <div class="groomer-rating">⭐ 4.9 (156 reviews)</div>
+                            <p style="color: #666; font-size: 14px;">8+ years • Certified groomer • 1.5km away</p>
+                            <p style="color: #666; font-size: 13px; margin-top: 5px;">"Specializing in large breeds, gentle handling"</p>
+                        </div>
+                        <div class="groomer-price">₹1,299</div>
+                    </div>
+
+                    <div class="groomer-card" onclick="selectGroomer('Rajesh')">
+                        <div class="groomer-avatar">👨</div>
+                        <div class="groomer-info">
+                            <h4>Rajesh Kumar</h4>
+                            <div class="groomer-rating">⭐ 4.8 (134 reviews)</div>
+                            <p style="color: #666; font-size: 14px;">6+ years • Spa treatments • 2km away</p>
+                            <p style="color: #666; font-size: 13px; margin-top: 5px;">"Premium grooming with natural products"</p>
+                        </div>
+                        <div class="groomer-price">₹1,399</div>
+                    </div>
+
+                    <div class="groomer-card" onclick="selectGroomer('Anita')">
+                        <div class="groomer-avatar">👩‍🦱</div>
+                        <div class="groomer-info">
+                            <h4>Anita Desai</h4>
+                            <div class="groomer-rating">⭐ 4.7 (98 reviews)</div>
+                            <p style="color: #666; font-size: 14px;">5+ years • Budget-friendly • 3km away</p>
+                            <p style="color: #666; font-size: 13px; margin-top: 5px;">"Quality grooming at best prices"</p>
+                        </div>
+                        <div class="groomer-price">₹1,199</div>
+                    </div>
+
+                    <!-- SUBSCRIPTION RECALL #2 (VERY IMPORTANT) -->
+                    <div class="subscription-recall">
+                        <h3>🤔 Tired of booking grooming every month?</h3>
+                        <p><strong>Join the Petsfolio Grooming Care Plan</strong> - We handle recurring care for Tommy.</p>
+                        <ul>
+                            <li>Grooming automatically scheduled</li>
+                            <li>Vet consultation included</li>
+                            <li>Training refresh sessions</li>
+                            <li>Dedicated support coordinator</li>
+                        </ul>
+                        <button class="btn btn-subscription" onclick="switchToSubscription()">Upgrade to Monthly Care →</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Grooming Service Complete -->
+                <div class="step-screen" id="step-grooming-complete">
+                    <div class="success-animation">
+                        <div class="success-icon" style="animation: none;">✨</div>
+                        <h2 style="color: #7B1FA2; margin: 20px 0;">Grooming Complete!</h2>
+                        <p style="font-size: 18px; color: #666;">Tommy looks amazing! 🐕</p>
+                        <p style="color: #666; margin-top: 10px;">Your groomer has completed the service.</p>
+                    </div>
+
+                    <div style="background: #F3E5F5; padding: 25px; border-radius: 10px; margin: 30px 0;">
+                        <h4 style="margin-bottom: 15px;">Service Summary:</h4>
+                        <ul style="list-style: none;">
+                            <li style="padding: 8px 0;">✓ Grooming completed by Meera Singh</li>
+                            <li style="padding: 8px 0;">✓ Duration: 1.5 hours</li>
+                            <li style="padding: 8px 0;">✓ Tommy was well-behaved</li>
+                            <li style="padding: 8px 0;">✓ Next recommended: 30 days</li>
+                        </ul>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-primary" onclick="showPostServicePopup()" style="margin: 20px auto; display: block;">Continue →</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Subscription Checkout -->
+                <div class="step-screen" id="step-subscription-checkout">
+                    <h2 class="screen-title">Subscription Summary</h2>
+                    <p class="screen-subtitle">Review your monthly care plan</p>
+
+                    <div class="checkout-summary">
+                        <div class="checkout-line">
+                            <span>Plan:</span>
+                            <span id="carePlanName">-</span>
+                        </div>
+                        <div class="checkout-line">
+                            <span>Billing:</span>
+                            <span>Monthly (recurring)</span>
+                        </div>
+                        <div class="checkout-line">
+                            <span>Includes:</span>
+                            <span id="carePlanIncludes">-</span>
+                        </div>
+                        <div class="checkout-line total">
+                            <span>Monthly Total:</span>
+                            <span id="subscriptionTotal">₹0</span>
+                        </div>
+                    </div>
+
+                    <div style="background: #E8F5E9; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h4 style="color: #388E3C; margin-bottom: 10px;">✅ Subscription Benefits:</h4>
+                        <ul style="list-style: none;">
+                            <li style="padding: 5px 0;">• Automatic monthly scheduling</li>
+                            <li style="padding: 5px 0;">• Priority booking slots</li>
+                            <li style="padding: 5px 0;">• Dedicated coordinator support</li>
+                            <li style="padding: 5px 0;">• Cancel anytime, no fees</li>
+                        </ul>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-outline" onclick="previousStep()">← Back</button>
+                        <button class="btn btn-subscription" onclick="processSubscriptionPayment()" style="font-size: 18px; padding: 15px 40px;">💳 Subscribe Now</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Subscription Active -->
+                <div class="step-screen" id="step-subscription-active">
+                    <div class="success-animation">
+                        <div class="success-icon">🎉</div>
+                        <h2 style="color: #388E3C; margin: 20px 0;">Subscription Active!</h2>
+                        <p style="font-size: 18px; color: #666;">Welcome to Tommy's Monthly Grooming Care Plan</p>
+                    </div>
+
+                    <div style="background: #E8F5E9; padding: 25px; border-radius: 10px; margin: 30px 0;">
+                        <h4 style="margin-bottom: 15px;">📅 Your Monthly Care Includes:</h4>
+                        <ul style="list-style: none;">
+                            <li style="padding: 8px 0;">✓ 1 Professional grooming session</li>
+                            <li style="padding: 8px 0;">✓ 1 Vet consultation</li>
+                            <li style="padding: 8px 0;">✓ 1 Training refresh session</li>
+                            <li style="padding: 8px 0;">✓ Priority support & booking</li>
+                        </ul>
+                    </div>
+
+                    <div style="text-align: center; color: #666;">
+                        <p>We'll coordinate your first grooming session within 3 days!</p>
+                        <p style="margin-top: 10px;">Next billing: <strong>1st February 2024</strong></p>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-primary" onclick="nextStep('subscription-renewal')" style="margin: 20px auto; display: block;">⏩ Fast Forward to Renewal</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Subscription Renewal -->
+                <div class="step-screen" id="step-subscription-renewal">
+                    <h2 class="screen-title">🔔 Tommy's Grooming Renewal</h2>
+                    <p class="screen-subtitle">Your monthly care plan is up for renewal</p>
+
+                    <div style="background: #E8F5E9; padding: 25px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #388E3C;">
+                        <h4 style="margin-bottom: 15px;">📦 Current Plan:</h4>
+                        <div class="checkout-line">
+                            <span>Plan:</span>
+                            <span id="renewalPlanName">Basic Care Plan</span>
+                        </div>
+                        <div class="checkout-line">
+                            <span>Monthly Amount:</span>
+                            <span id="renewalAmount">₹1,499</span>
+                        </div>
+                    </div>
+
+                    <div style="background: #FFF3E0; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h4 style="margin-bottom: 15px; color: #F57C00;">This Month's Usage:</h4>
+                        <div class="checkout-line">
+                            <span>☑ Grooming session</span>
+                            <span style="color: #4CAF50; font-weight: bold;">✅ Used</span>
+                        </div>
+                        <div class="checkout-line">
+                            <span>☑ Vet consultation</span>
+                            <span style="color: #4CAF50; font-weight: bold;">✅ Used</span>
+                        </div>
+                        <div class="checkout-line">
+                            <span>☑ Training refresh</span>
+                            <span style="color: #FF9800; font-weight: bold;">⏳ Scheduled</span>
+                        </div>
+                    </div>
+
+                    <div class="checkout-summary">
+                        <div class="checkout-line total">
+                            <span>Renewal Amount:</span>
+                            <span>₹1,499</span>
+                        </div>
+                        <p style="text-align: center; margin-top: 15px; color: #666;">Next billing: <strong>1st March 2024</strong></p>
+                    </div>
+
+                    <div class="navigation" style="justify-content: space-around; flex-wrap: wrap;">
+                        <button class="btn btn-subscription" onclick="renewSubscription()" style="flex: 1; min-width: 200px;">✅ Renew Now</button>
+                        <button class="btn btn-grooming" onclick="upgradeSubscription()" style="flex: 1; min-width: 200px;">⬆️ Upgrade Plan</button>
+                        <button class="btn btn-outline" onclick="pauseSubscription()" style="flex: 1; min-width: 200px;">⏸️ Pause Plan</button>
+                    </div>
+                </div>
+
+                <!-- STEP: Subscription Renewed -->
+                <div class="step-screen" id="step-subscription-renewed">
+                    <div class="success-animation">
+                        <div class="success-icon">🔄</div>
+                        <h2 style="color: #388E3C; margin: 20px 0;">Subscription Renewed!</h2>
+                        <p style="font-size: 18px; color: #666;">Tommy's care continues for another month</p>
+                    </div>
+
+                    <div class="checkout-summary">
+                        <div class="checkout-line">
+                            <span>Plan:</span>
+                            <span>Basic Care Plan</span>
+                        </div>
+                        <div class="checkout-line">
+                            <span>Services Included:</span>
+                            <span>Grooming + Vet + Training</span>
+                        </div>
+                        <div class="checkout-line total">
+                            <span>Amount Charged:</span>
+                            <span>₹1,499</span>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px; color: #666;">
+                            Next billing: <strong>1st March 2024</strong>
+                        </div>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn btn-primary" onclick="resetFlow()" style="margin: 30px auto; display: block; font-size: 18px;">🎉 Complete Flow - Start Over</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Post-Service Conversion Popup (MOST IMPORTANT FOR GROOMING) -->
+        <div class="post-service-popup" id="postServicePopup">
+            <button class="close-popup" onclick="closePostServicePopup()">×</button>
+            <h3>🐾 Tommy is due for grooming again next month!</h3>
+            <p><strong>Join the Grooming Care Plan</strong> and never worry about scheduling again.</p>
+            <ul style="list-style: none; margin: 15px 0;">
+                <li style="padding: 5px 0;">✔ Auto-scheduled grooming</li>
+                <li style="padding: 5px 0;">✔ Vet consultation included</li>
+                <li style="padding: 5px 0;">✔ Training support</li>
+                <li style="padding: 5px 0;">✔ Only ₹1,499/month</li>
+            </ul>
+            <button class="btn btn-subscription" onclick="convertToSubscriptionFromPopup()" style="width: 100%; margin-top: 10px;">Subscribe Now ⭐</button>
+            <button class="btn btn-outline" onclick="closePostServicePopup()" style="width: 100%; margin-top: 10px;">Maybe Later</button>
+        </div>
+
+        <!-- Upsell Modals (reuse from previous walking flow as needed) -->
+
+    </div>
+
+    <script>
+        // Global state
+        let currentService = ''; // 'walking' or 'grooming'
+        let selectedPath = ''; // 'standard', 'premium', 'regular', 'subscription'
+        let selectedPackagePrice = 0;
+        let selectedPackageName = '';
+        let selectedCarePlan = '';
+        let selectedCarePlanPrice = 0;
+
+        function selectService(service) {
+            currentService = service;
+            
+            // Update service indicator
+            const serviceType = document.getElementById('serviceType');
+            serviceType.style.display = 'block';
+            
+            if (service === 'walking') {
+                serviceType.textContent = 'Walking Service';
+                serviceType.className = 'path-badge standard';
+                nextStep('1w');
+            } else if (service === 'grooming') {
+                serviceType.textContent = 'Grooming Service';
+                serviceType.className = 'path-badge grooming';
+                nextStep('1g');
+            }
+            
+            updateProgress();
+        }
+
+        function selectGroomingPath(path) {
+            selectedPath = path;
+            
+            // Update path indicator
+            const pathBadge = document.getElementById('currentPath');
+            pathBadge.style.display = 'block';
+            
+            if (path === 'regular') {
+                pathBadge.textContent = 'One-time Grooming';
+                pathBadge.className = 'path-badge grooming';
+                nextStep('2g-regular');
+            } else if (path === 'subscription') {
+                pathBadge.textContent = 'Subscription Plan ⭐';
+                pathBadge.className = 'path-badge subscription';
+                nextStep('2g-subscription');
+            }
+            
+            updateProgress();
+        }
+
+        function selectGroomingPackage(element) {
+            // Remove previous selection
+            document.querySelectorAll('.package-option').forEach(el => el.classList.remove('selected'));
+            
+            // Add selection
+            element.classList.add('selected');
+            
+            // Store package info
+            selectedPackagePrice = parseInt(element.dataset.price);
+            selectedPackageName = element.querySelector('h4').textContent;
+            
+            // Enable button
+            document.getElementById('groomingPackageBtn').disabled = false;
+        }
+
+        function selectCarePlan(planType, price) {
+            selectedCarePlan = planType;
+            selectedCarePlanPrice = price;
+            
+            // Update checkout
+            document.getElementById('carePlanName').textContent = planType === 'basic' ? 'Basic Care Plan' : 'Premium Care Plan';
+            document.getElementById('carePlanIncludes').textContent = planType === 'basic' ? 'Grooming + Vet + Training Tips' : 'Premium Grooming + Vet + Training Session + Priority';
+            document.getElementById('subscriptionTotal').textContent = `₹${price.toLocaleString()}`;
+            
+            nextStep('subscription-checkout');
+        }
+
+        function switchToSubscription() {
+            // Switch from regular to subscription path
+            selectedPath = 'subscription';
+            const pathBadge = document.getElementById('currentPath');
+            pathBadge.textContent = 'Subscription Plan ⭐';
+            pathBadge.className = 'path-badge subscription';
+            nextStep('2g-subscription');
+        }
+
+        function submitGroomingRequest() {
+            // Update checkout summary
+            document.getElementById('groomingPackageName').textContent = selectedPackageName;
+            document.getElementById('groomingTotal').textContent = `₹${selectedPackagePrice.toLocaleString()}`;
+            
+            // Simulate request processing
+            setTimeout(() => {
+                nextStep('grooming-bids');
+            }, 500);
+        }
+
+        function selectGroomer(name) {
+            if (confirm(`Confirm ${name} for Tommy's grooming?`)) {
+                // Simulate booking
+                setTimeout(() => {
+                    nextStep('grooming-complete');
+                }, 500);
+            }
+        }
+
+        function showPostServicePopup() {
+            document.getElementById('postServicePopup').classList.add('show');
+        }
+
+        function closePostServicePopup() {
+            document.getElementById('postServicePopup').classList.remove('show');
+        }
+
+        function convertToSubscriptionFromPopup() {
+            closePostServicePopup();
+            alert('Great choice! Redirecting to subscription plans...');
+            selectedPath = 'subscription';
+            nextStep('2g-subscription');
+        }
+
+        function processSubscriptionPayment() {
+            setTimeout(() => {
+                nextStep('subscription-active');
+            }, 500);
+        }
+
+        function renewSubscription() {
+            setTimeout(() => {
+                nextStep('subscription-renewed');
+            }, 500);
+        }
+
+        function upgradeSubscription() {
+            alert('Upgrading to Premium Care Plan...');
+            nextStep('2g-subscription');
+        }
+
+        function pauseSubscription() {
+            if (confirm('Are you sure you want to pause your subscription?')) {
+                alert('Subscription paused. You can resume anytime from your dashboard.');
+            }
+        }
+
+        function selectPath(path) {
+            selectedPath = path;
+            
+            const pathBadge = document.getElementById('currentPath');
+            pathBadge.style.display = 'block';
+            pathBadge.textContent = path === 'standard' ? 'Standard Path' : 'Premium Path ⭐';
+            pathBadge.className = `path-badge ${path}`;
+            
+            // Navigate based on path (add walking flow steps as needed)
+            alert(`Walking ${path} path - Add walking flow steps from previous code here`);
+        }
+
+        function nextStep(stepId) {
+            // Hide all steps
+            document.querySelectorAll('.step-screen').forEach(el => el.classList.remove('active'));
+            
+            // Show target step
+            const targetStep = document.getElementById(`step-${stepId}`);
+            if (targetStep) {
+                targetStep.classList.add('active');
+                updateProgress();
+            }
+        }
+
+        function previousStep() {
+            // Simple back - enhance as needed
+            window.history.back();
+        }
+
+        function backToServiceSelection() {
+            currentService = '';
+            selectedPath = '';
+            document.getElementById('serviceType').style.display = 'none';
+            document.getElementById('currentPath').style.display = 'none';
+            nextStep('0');
+        }
+
+        function updateProgress() {
+            const totalSteps = 10; // Approximate
+            const activeStep = document.querySelector('.step-screen.active');
+            const allSteps = Array.from(document.querySelectorAll('.step-screen'));
+            const currentIndex = allSteps.indexOf(activeStep);
+            const progress = ((currentIndex + 1) / totalSteps) * 100;
+            
+            document.getElementById('progressBar').style.width = `${Math.min(progress, 100)}%`;
+        }
+
+        function resetFlow() {
+            location.reload();
+        }
+
+        // Event listeners
+        document.getElementById('resetBtn').addEventListener('click', resetFlow);
+
+        // Initialize
+        updateProgress();
+    </script>
+</body>
+</html>
+```
