@@ -18,6 +18,7 @@ export const createTask = async (req, res) => {
       recurring,
       taskType,
       section,
+      responsiblePerson,
     } = req.body;
 
     // Parse assignees - comes as JSON string from FormData
@@ -148,6 +149,7 @@ export const createTask = async (req, res) => {
       taskType: normalizedTaskType,
       groupId: normalizedTaskType === "group" ? normalizedGroupId : "personal",
       section: section ? section.trim() : "General",
+      responsiblePerson: responsiblePerson || null,
       adminId: taskAdminId,
       createdBy: req.userId,
       attachments: attachmentUrls,
@@ -348,6 +350,7 @@ export const getTasks = async (req, res) => {
 
     const tasks = await Task.find(query)
       .populate("assignees", "name email role avatar")
+      .populate("responsiblePerson", "name email role avatar")
       .populate("comments.userId", "name avatar")
       .lean();
 
@@ -779,6 +782,7 @@ export const getAssignedTasks = async (req, res) => {
       ],
     })
       .populate("assignees", "name email role avatar")
+      .populate("responsiblePerson", "name email role avatar")
       .populate("comments.userId", "name avatar")
       .lean();
 
@@ -864,7 +868,9 @@ export const getTaskDetails = async (req, res) => {
     const { id } = req.params;
     const task = await Task.findById(id)
       .populate("assignees", "name email role avatar")
+      .populate("responsiblePerson", "name email role avatar")
       .populate("comments.userId", "name avatar")
+      .populate("createdBy", "name avatar")
       .lean();
 
     if (!task) {

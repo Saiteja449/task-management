@@ -11,6 +11,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import startTaskReminders from './jobs/taskReminders.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,9 @@ app.use(cors());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 connectDB();
+
+// Initialize scheduled jobs
+startTaskReminders();
 
 app.use('/api/users', userRoutes);
 app.use('/api/employees', employeeRoutes);
