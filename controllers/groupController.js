@@ -257,7 +257,8 @@ export const getGroupDetails = async (req, res) => {
 
     const tasks = await Task.find({ groupId: id })
       .populate("assignees", "name email role avatar")
-      .populate("comments.userId", "name avatar");
+      .populate("comments.userId", "name avatar")
+      .populate("createdBy", "name email avatar");
 
     res.status(200).json({
       status: true,

@@ -352,6 +352,7 @@ export const getTasks = async (req, res) => {
       .populate("assignees", "name email role avatar")
       .populate("responsiblePerson", "name email role avatar")
       .populate("comments.userId", "name avatar")
+      .populate("createdBy", "name email avatar")
       .lean();
 
     // Fetch group names for group tasks
@@ -609,23 +610,14 @@ export const deleteTask = async (req, res) => {
 
     if (task) {
       const user = await User.findById(req.userId);
-      const adminId = user.role === "Admin" ? user._id : user.adminId;
 
-      // Allow if user is admin of the workspace OR the one who created the task
-      const isPrivatePersonalTask =
-        task.groupId === "personal" &&
-        (task.taskType === "personal" || !task.taskType) &&
-        task.createdBy.toString() !== req.userId.toString();
-      const isAdmin =
-        user.role === "Admin" &&
-        task.adminId.toString() === user._id.toString() &&
-        !isPrivatePersonalTask;
+      // Only the person who created this task can delete it
       const isCreator = task.createdBy.toString() === req.userId.toString();
 
-      if (!isAdmin && !isCreator) {
+      if (!isCreator) {
         return res.status(403).json({
           status: false,
-          message: "Not authorized to delete this task",
+          message: "Not authorized: Only the person who created this task can delete it",
         });
       }
 
@@ -784,6 +776,7 @@ export const getAssignedTasks = async (req, res) => {
       .populate("assignees", "name email role avatar")
       .populate("responsiblePerson", "name email role avatar")
       .populate("comments.userId", "name avatar")
+      .populate("createdBy", "name email avatar")
       .lean();
 
     // Fetch group names for group tasks
@@ -833,6 +826,7 @@ export const getGroupAssignedTasks = async (req, res) => {
     })
       .populate("assignees", "name email role avatar")
       .populate("comments.userId", "name avatar")
+      .populate("createdBy", "name email avatar")
       .lean();
 
     const groupIds = [
