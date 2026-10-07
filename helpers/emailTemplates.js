@@ -357,7 +357,13 @@ export const generateTaskEmailTemplate = ({
               <td width="50%" valign="top" style="padding-bottom: 10px;">
                 <span style="font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Workspace / Section</span><br/>
                 <span style="font-size: 13px; font-weight: 600; color: #334155;">
-                  ${groupName ? `📁 ${groupName}` : "Personal"} ${task?.section ? `› ${task.section}` : ""}
+                  ${(() => {
+                    const ws = groupName || task?.groupName || (task?.taskType === "personal" ? "Personal" : "");
+                    if (ws) {
+                      return `📁 ${ws}${task?.section ? ` › ${task.section}` : ""}`;
+                    }
+                    return task?.section ? `📁 ${task.section}` : "📁 Workspace";
+                  })()}
                 </span>
               </td>
             </tr>

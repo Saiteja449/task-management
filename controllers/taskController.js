@@ -10,6 +10,43 @@ import {
   getTaskUrl,
 } from "../helpers/emailTemplates.js";
 
+const resolveTaskGroupName = async (task, currentUser = null) => {
+  try {
+    if (task?.groupId && task.groupId !== "personal") {
+      const grp = await Group.findById(task.groupId).select("name");
+      if (grp?.name) return grp.name;
+    }
+    if (task?.groupName) return task.groupName;
+
+    // Check admin's business name
+    const adminIdToLook =
+      task?.adminId ||
+      currentUser?.adminId ||
+      (currentUser?.role === "Admin" ? currentUser._id : null);
+
+    if (adminIdToLook && task?.taskType !== "personal") {
+      const adm = await User.findById(adminIdToLook).select("businessName name");
+      if (adm?.businessName) return adm.businessName;
+    }
+
+    if (
+      currentUser &&
+      currentUser.role === "Admin" &&
+      currentUser.businessName &&
+      task?.taskType !== "personal"
+    ) {
+      return currentUser.businessName;
+    }
+
+    if (task?.taskType === "personal") {
+      return "Personal";
+    }
+  } catch (err) {
+    console.error("Error resolving task group name:", err);
+  }
+  return task?.taskType === "personal" ? "Personal" : "";
+};
+
 export const createTask = async (req, res) => {
   try {
     const {
@@ -152,7 +189,7 @@ export const createTask = async (req, res) => {
       dueDate,
       assignees: resolvedAssignees,
       taskType: normalizedTaskType,
-      groupId: normalizedTaskType === "group" ? normalizedGroupId : "personal",
+      groupId: normalizedGroupId,
       section: section ? section.trim() : "General",
       responsiblePerson: responsiblePerson || null,
       adminId: taskAdminId,
@@ -173,6 +210,8 @@ export const createTask = async (req, res) => {
       // Dispatch notifications and emails in background
       setImmediate(async () => {
         try {
+          const groupName = await resolveTaskGroupName(task, user);
+
           // Notify the creator that the task was successfully created
           const creatorEmailHtml = generateTaskEmailTemplate({
             badge: "TASK CREATED",
@@ -181,6 +220,7 @@ export const createTask = async (req, res) => {
             subheadline: `Your task "${title}" was created in DoNow.`,
             task,
             taskId: task._id,
+            groupName,
             actionText: "View Task in DoNow →",
             attachments: task.attachments,
           });
@@ -206,6 +246,7 @@ export const createTask = async (req, res) => {
               subheadline: `${creatorName} assigned a new task to you.`,
               task,
               taskId: task._id,
+              groupName,
               creatorName,
               actionText: "Open Task in DoNow →",
               attachments: task.attachments,
@@ -394,6 +435,7 @@ export const updateTask = async (req, res) => {
       // Dispatch notifications and emails in background
       setImmediate(async () => {
         try {
+          const groupName = await resolveTaskGroupName(updatedTask, user);
           const isPersonalTask =
             task.taskType === "personal" ||
             (!task.taskType && task.groupId === "personal");
@@ -408,6 +450,7 @@ export const updateTask = async (req, res) => {
               subheadline: `Updated by ${user.name}`,
               task: updatedTask,
               taskId: task._id,
+              groupName,
               actionText: "Open Task in DoNow →",
             });
 
@@ -456,6 +499,7 @@ export const updateTask = async (req, res) => {
               subheadline: `Updated by ${user.name}`,
               task: updatedTask,
               taskId: task._id,
+              groupName,
               actionText: "Open Task in DoNow →",
               attachments: updatedTask.attachments,
             });
@@ -632,6 +676,7 @@ export const addComment = async (req, res) => {
       if (user.role === "Employee") {
         setImmediate(async () => {
           try {
+            const groupName = await resolveTaskGroupName(task, user);
             await createNotification({
               userId: adminId,
               adminId,
@@ -644,6 +689,7 @@ export const addComment = async (req, res) => {
                 subheadline: `${user.name} commented on the task.`,
                 task,
                 taskId: task._id,
+                groupName,
                 customMessage: `<strong>${user.name} wrote:</strong><br/><em style="color:#475569;">"${text}"</em>`,
                 actionText: "View Discussion & Reply →",
               }),
@@ -878,6 +924,7 @@ export const updateTaskStatus = async (req, res) => {
     // Dispatch notifications and emails in background
     setImmediate(async () => {
       try {
+        const groupName = await resolveTaskGroupName(updatedTask, user);
         const isPersonalTask =
           task.taskType === "personal" ||
           (!task.taskType && task.groupId === "personal");
@@ -892,6 +939,7 @@ export const updateTaskStatus = async (req, res) => {
             subheadline: `Updated by ${user.name}`,
             task: updatedTask,
             taskId: task._id,
+            groupName,
             actionText: "Open Task in DoNow →",
           });
 
@@ -968,6 +1016,7 @@ export const sendDeadlineReminders = async (req, res) => {
     for (const task of tasks) {
       const { title, dueDate, assignees, adminId, taskType } = task;
       const formattedDate = new Date(dueDate).toLocaleDateString();
+      const groupName = await resolveTaskGroupName(task);
 
       const subject = `⏰ Reminder: "${title}" is Due Tomorrow`;
 
@@ -978,6 +1027,7 @@ export const sendDeadlineReminders = async (req, res) => {
         subheadline: `Scheduled completion date: ${formattedDate}. Please complete or update status before the deadline.`,
         task,
         taskId: task._id,
+        groupName,
         actionText: "Open Task in DoNow →",
       });
 
@@ -988,6 +1038,7 @@ export const sendDeadlineReminders = async (req, res) => {
         subheadline: `Assigned to: ${assignees.map((a) => a.name).join(", ")}.`,
         task,
         taskId: task._id,
+        groupName,
         actionText: "View Team Task in DoNow →",
       });
 
