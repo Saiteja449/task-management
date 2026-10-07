@@ -1,6 +1,7 @@
 import User from "../models/userModel.js";
 import generateToken from "../helpers/generateToken.js";
 import { sendNotificationEmail } from "../helpers/emailHelper.js";
+import { generateWelcomeEmailTemplate } from "../helpers/emailTemplates.js";
 
 export const signupUser = async (req, res) => {
   try {
@@ -60,46 +61,16 @@ export const signupUser = async (req, res) => {
       const token = generateToken(user._id);
 
       // Send Welcome Email
+      const welcomeEmailHtml = generateWelcomeEmailTemplate({
+        name: user.name,
+        businessName: user.businessName,
+      });
+
       await sendNotificationEmail(
         user.email,
         `🎉 Welcome to DoNow!`,
         `Welcome, ${user.name}! 👋`,
-        `
-    <p>Hi <strong>${user.name}</strong>,</p>
-
-    <p>We're thrilled to welcome you to <strong>DoNow</strong>!</p>
-
-    <p>Your workspace for <strong>${user.businessName}</strong> has been successfully created and is ready to use.</p>
-
-    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:18px;margin:24px 0;">
-      <h3 style="margin:0 0 12px;color:#111827;">🚀 What's Next?</h3>
-      <ul style="padding-left:20px;margin:0;line-height:1.8;">
-        <li>Create and organize your tasks.</li>
-        <li>Invite employees and assign work.</li>
-        <li>Track task progress in real time.</li>
-        <li>Receive deadline reminders and notifications.</li>
-        <li>Boost your team's productivity with centralized DoNow.</li>
-      </ul>
-    </div>
-
-    <p>Click the button below to log in and start managing your team.</p>
-
-    <div style="text-align:center;margin:32px 0;">
-      <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login"
-         style="background:#7c3aed;color:#ffffff;text-decoration:none;padding:14px 30px;border-radius:8px;font-size:16px;font-weight:600;display:inline-block;">
-         Login to Your Workspace
-      </a>
-    </div>
-
-    <p>If you have any questions or need assistance, our support team is always here to help.</p>
-
-    <p>Thank you for choosing <strong>DoNow</strong>. We look forward to helping you and your team stay organized and productive.</p>
-
-    <br>
-
-    <p>Best Regards,<br>
-    <strong>DoNow Team</strong></p>
-  `,
+        welcomeEmailHtml,
       );
 
       res.status(201).json({

@@ -4,6 +4,11 @@ import Group from "../models/groupModel.js";
 import { createNotification } from "../helpers/notificationHelper.js";
 import { uploadMultipleToCloudinary } from "../helpers/uploadHelper.js";
 import { sendNotificationEmail } from "../helpers/emailHelper.js";
+import {
+  generateTaskEmailTemplate,
+  generateGeneralEmailTemplate,
+  getTaskUrl,
+} from "../helpers/emailTemplates.js";
 
 export const createTask = async (req, res) => {
   try {
@@ -169,60 +174,43 @@ export const createTask = async (req, res) => {
       setImmediate(async () => {
         try {
           // Notify the creator that the task was successfully created
+          const creatorEmailHtml = generateTaskEmailTemplate({
+            badge: "TASK CREATED",
+            badgeType: "emerald",
+            headline: "Task Created Successfully",
+            subheadline: `Your task "${title}" was created in DoNow.`,
+            task,
+            taskId: task._id,
+            actionText: "View Task in DoNow →",
+            attachments: task.attachments,
+          });
+
           await createNotification({
             userId: req.userId,
             adminId: taskAdminId,
             title: "✅ Task Created Successfully",
             message: `Task "${title}" was successfully created. Priority: ${priority || "Medium"}.`,
-            emailMessage: `
-    <p>Hello,</p>
-
-    <p>Your task has been created successfully in <strong>DoNow</strong>.</p>
-
-    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:25px 0;">
-      <h3 style="margin-top:0;">📋 Task Details</h3>
-
-      <table style="width:100%;">
-        <tr>
-          <td><strong>Task</strong></td>
-          <td>${title}</td>
-        </tr>
-
-        <tr>
-          <td><strong>Priority</strong></td>
-          <td>${priority || "Medium"}</td>
-        </tr>
-
-        <tr>
-          <td><strong>Status</strong></td>
-          <td>${status || "Pending"}</td>
-        </tr>
-
-        <tr>
-          <td><strong>Due Date</strong></td>
-          <td>${new Date(dueDate).toLocaleDateString()}</td>
-        </tr>
-      </table>
-    </div>
-
-    <p>You can now monitor progress and collaborate with your team.</p>
-
-    <div style="text-align:center;margin-top:30px;">
-      <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login"
-      style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">
-      View Task
-      </a>
-    </div>
-
-    <br>
-
-    <p>Thank you,<br><strong>DoNow Team</strong></p>
-  `,
+            emailMessage: creatorEmailHtml,
             type: "task",
           });
 
           // Notify assignees
           if (resolvedAssignees && resolvedAssignees.length > 0) {
+            const creatorUser = await User.findById(req.userId).select("name");
+            const creatorName = creatorUser ? creatorUser.name : "Team Member";
+
+            const assigneeEmailHtml = generateTaskEmailTemplate({
+              badge: "NEW TASK ASSIGNED",
+              badgeType: "indigo",
+              headline: "You have been assigned a new task",
+              subheadline: `${creatorName} assigned a new task to you.`,
+              task,
+              taskId: task._id,
+              creatorName,
+              actionText: "Open Task in DoNow →",
+              attachments: task.attachments,
+            });
+
             for (const assigneeId of resolvedAssignees) {
               if (assigneeId.toString() !== req.userId.toString()) {
                 await createNotification({
@@ -230,95 +218,7 @@ export const createTask = async (req, res) => {
                   adminId: taskAdminId,
                   title: "New Task Assigned",
                   message: `You have been assigned a new task: "${title}". Priority: ${priority || "Medium"}.`,
-                  emailMessage: `
-<p>Hello,</p>
-
-<p>You have been assigned a new task in <strong>DoNow</strong>.</p>
-
-<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:25px 0;">
-
-<h3 style="margin-top:0;">📝 Task Information</h3>
-
-<table style="width:100%;">
-
-<tr>
-<td><strong>Task</strong></td>
-<td>${title}</td>
-</tr>
-
-<tr>
-<td><strong>Description</strong></td>
-<td>${description || "No description provided."}</td>
-</tr>
-
-<tr>
-<td><strong>Priority</strong></td>
-<td>${priority || "Medium"}</td>
-</tr>
-
-<tr>
-<td><strong>Status</strong></td>
-<td>${status || "Pending"}</td>
-</tr>
-
-<tr>
-<td><strong>Due Date</strong></td>
-<td>${new Date(dueDate).toLocaleDateString()}</td>
-</tr>
-
-<tr>
-<td><strong>Task Type</strong></td>
-<td>${normalizedTaskType}</td>
-</tr>
-
-${
-  section
-    ? `
-<tr>
-<td><strong>Section</strong></td>
-<td>${section}</td>
-</tr>
-`
-    : ""
-}
-
-</table>
-
-</div>
-
-<div style="background:#eef2ff;border-left:4px solid #7c3aed;padding:16px;border-radius:6px;">
-
-<strong>Action Required</strong>
-
-<ul style="margin-top:10px;line-height:1.8;">
-<li>Review the task details.</li>
-<li>Begin work as soon as possible.</li>
-<li>Update the task status regularly.</li>
-<li>Complete it before the due date.</li>
-</ul>
-
-</div>
-
-<div style="text-align:center;margin-top:30px;">
-
-<a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login"
-style="
-background:#7c3aed;
-color:#fff;
-padding:14px 28px;
-border-radius:8px;
-text-decoration:none;
-font-weight:bold;">
-Open Task
-</a>
-
-</div>
-
-<br>
-
-<p>Best Regards,<br>
-<strong>DoNow Team</strong></p>
-`,
+                  emailMessage: assigneeEmailHtml,
                   type: "task",
                   attachments: task.attachments,
                 });
@@ -326,7 +226,10 @@ Open Task
             }
           }
         } catch (notifErr) {
-          console.error("Background notification error in createTask:", notifErr);
+          console.error(
+            "Background notification error in createTask:",
+            notifErr,
+          );
         }
       });
     } else {
@@ -497,23 +400,24 @@ export const updateTask = async (req, res) => {
 
           // Notify if status changed
           if (req.body.status && req.body.status !== oldStatus) {
+            const isCompleted = req.body.status === "Completed";
+            const emailHtml = generateTaskEmailTemplate({
+              badge: isCompleted ? "TASK COMPLETED" : "STATUS UPDATED",
+              badgeType: isCompleted ? "emerald" : "sky",
+              headline: `Task status updated to "${req.body.status}"`,
+              subheadline: `Updated by ${user.name}`,
+              task: updatedTask,
+              taskId: task._id,
+              actionText: "Open Task in DoNow →",
+            });
+
             if (isPersonalTask) {
               await createNotification({
                 userId: req.userId,
                 adminId,
-                title: "Personal Task Updated",
+                title: "Personal Task Status Updated",
                 message: `Your personal task "${task.title}" status has been updated to "${req.body.status}".`,
-                emailMessage: `
-<p>Hello,</p>
-<p>Your personal task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>New Status:</strong> ${req.body.status}</p>
-<p>You can view the details in the DoNow System.</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+                emailMessage: emailHtml,
                 type: "task",
               });
             } else {
@@ -524,17 +428,7 @@ export const updateTask = async (req, res) => {
                   adminId,
                   title: "Task Status Updated",
                   message: `The task "${task.title}" status has been updated to "${req.body.status}" by ${user.name}.`,
-                  emailMessage: `
-<p>Hello,</p>
-<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>New Status:</strong> ${req.body.status}</p>
-<p><strong>Updated By:</strong> ${user.name}</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+                  emailMessage: emailHtml,
                   type: "task",
                 });
               }
@@ -546,40 +440,33 @@ export const updateTask = async (req, res) => {
                     userId: assigneeId,
                     adminId,
                     title: "Task Status Updated",
-                    message: `Your task "${task.title}" status has been updated to "${req.body.status}".`,
-                    emailMessage: `
-<p>Hello,</p>
-<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>New Status:</strong> ${req.body.status}</p>
-<p><strong>Updated By:</strong> ${user.name}</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+                    message: `The status of task "${task.title}" has been updated to "${req.body.status}".`,
+                    emailMessage: emailHtml,
                     type: "task",
                   });
                 }
               }
             }
           } else {
-            // Notify general update
+            // General update
+            const emailHtml = generateTaskEmailTemplate({
+              badge: "TASK UPDATED",
+              badgeType: "sky",
+              headline: `Task "${task.title}" has been updated`,
+              subheadline: `Updated by ${user.name}`,
+              task: updatedTask,
+              taskId: task._id,
+              actionText: "Open Task in DoNow →",
+              attachments: updatedTask.attachments,
+            });
+
             if (isPersonalTask) {
               await createNotification({
                 userId: req.userId,
                 adminId,
                 title: "Personal Task Updated",
                 message: `Your personal task "${task.title}" has been updated.`,
-                emailMessage: `
-<p>Hello,</p>
-<p>Your personal task <strong>"${task.title}"</strong> has been updated.</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+                emailMessage: emailHtml,
                 type: "task",
               });
             } else {
@@ -589,18 +476,8 @@ export const updateTask = async (req, res) => {
                     userId: assigneeId,
                     adminId,
                     title: "Task Updated",
-                    message: `The task "${task.title}" has been updated. Please check for details.`,
-                    emailMessage: `
-<p>Hello,</p>
-<p>The task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>Updated By:</strong> ${user.name}</p>
-<p>Please log in to view the changes.</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+                    message: `The task "${task.title}" has been updated by ${user.name}.`,
+                    emailMessage: emailHtml,
                     type: "task",
                   });
                 }
@@ -608,7 +485,10 @@ export const updateTask = async (req, res) => {
             }
           }
         } catch (notifErr) {
-          console.error("Background notification error in updateTask:", notifErr);
+          console.error(
+            "Background notification error in updateTask:",
+            notifErr,
+          );
         }
       });
     } else {
@@ -633,7 +513,8 @@ export const deleteTask = async (req, res) => {
       if (!isCreator) {
         return res.status(403).json({
           status: false,
-          message: "Not authorized: Only the person who created this task can delete it",
+          message:
+            "Not authorized: Only the person who created this task can delete it",
         });
       }
 
@@ -657,19 +538,21 @@ export const deleteTask = async (req, res) => {
               adminId: adminIdValue,
               title: "Task Deleted",
               message: `The task "${title}" has been deleted.`,
-              emailMessage: `
-<p>Hello,</p>
-<p>The task <strong>"${title}"</strong> has been deleted.</p>
-<p><strong>Deleted By:</strong> ${user.name}</p>
-<p>If you have any questions, please contact the administrator.</p>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+              emailMessage: generateGeneralEmailTemplate({
+                badge: "TASK DELETED",
+                badgeType: "rose",
+                headline: `Task "${title}" has been deleted`,
+                message: `<p style="margin: 0 0 10px 0;">The task <strong>"${title}"</strong> was deleted by <strong>${user.name}</strong>.</p><p style="margin: 0; color: #64748b;">If you have any questions, please contact your workspace administrator.</p>`,
+                actionText: "Go to Dashboard →",
+              }),
               type: "task",
             });
           }
         } catch (notifErr) {
-          console.error("Background notification error in deleteTask:", notifErr);
+          console.error(
+            "Background notification error in deleteTask:",
+            notifErr,
+          );
         }
       });
     } else {
@@ -754,25 +637,23 @@ export const addComment = async (req, res) => {
               adminId,
               title: "New Comment on Task",
               message: `${user.name} commented on "${task.title}": "${text.substring(0, 50)}..."`,
-              emailMessage: `
-<p>Hello,</p>
-<p>A new comment was added to the task <strong>"${task.title}"</strong>.</p>
-<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:25px 0;">
-  <p style="margin:0;"><strong>${user.name}</strong> wrote:</p>
-  <blockquote style="margin:10px 0 0;padding-left:15px;border-left:4px solid #7c3aed;color:#4b5563;">
-    ${text}
-  </blockquote>
-</div>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+              emailMessage: generateTaskEmailTemplate({
+                badge: "NEW COMMENT",
+                badgeType: "violet",
+                headline: `New comment on "${task.title}"`,
+                subheadline: `${user.name} commented on the task.`,
+                task,
+                taskId: task._id,
+                customMessage: `<strong>${user.name} wrote:</strong><br/><em style="color:#475569;">"${text}"</em>`,
+                actionText: "View Discussion & Reply →",
+              }),
               type: "task",
             });
           } catch (notifErr) {
-            console.error("Background notification error in addComment:", notifErr);
+            console.error(
+              "Background notification error in addComment:",
+              notifErr,
+            );
           }
         });
       }
@@ -1003,22 +884,24 @@ export const updateTaskStatus = async (req, res) => {
 
         // Notify if status changed
         if (status !== oldStatus) {
+          const isCompleted = status === "Completed";
+          const emailHtml = generateTaskEmailTemplate({
+            badge: isCompleted ? "TASK COMPLETED" : "STATUS UPDATED",
+            badgeType: isCompleted ? "emerald" : "sky",
+            headline: `Task status updated to "${status}"`,
+            subheadline: `Updated by ${user.name}`,
+            task: updatedTask,
+            taskId: task._id,
+            actionText: "Open Task in DoNow →",
+          });
+
           if (isPersonalTask) {
             await createNotification({
               userId: req.userId,
               adminId: task.adminId,
               title: "Personal Task Status Updated",
               message: `Your personal task "${task.title}" status has been updated to "${status}".`,
-              emailMessage: `
-<p>Hello,</p>
-<p>Your personal task <strong>"${task.title}"</strong> status has been updated.</p>
-<p><strong>New Status:</strong> ${status}</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+              emailMessage: emailHtml,
               type: "task",
             });
           } else {
@@ -1029,17 +912,7 @@ export const updateTaskStatus = async (req, res) => {
                 adminId: task.adminId,
                 title: "Task Status Updated",
                 message: `The task "${task.title}" status has been updated to "${status}" by ${user.name}.`,
-                emailMessage: `
-<p>Hello,</p>
-<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>New Status:</strong> ${status}</p>
-<p><strong>Updated By:</strong> ${user.name}</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+                emailMessage: emailHtml,
                 type: "task",
               });
             }
@@ -1052,17 +925,7 @@ export const updateTaskStatus = async (req, res) => {
                   adminId: task.adminId,
                   title: "Task Status Updated",
                   message: `The status of task "${task.title}" has been updated to "${status}".`,
-                  emailMessage: `
-<p>Hello,</p>
-<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>New Status:</strong> ${status}</p>
-<p><strong>Updated By:</strong> ${user.name}</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+                  emailMessage: emailHtml,
                   type: "task",
                 });
               }
@@ -1070,7 +933,10 @@ export const updateTaskStatus = async (req, res) => {
           }
         }
       } catch (notifErr) {
-        console.error("Background notification error in updateTaskStatus:", notifErr);
+        console.error(
+          "Background notification error in updateTaskStatus:",
+          notifErr,
+        );
       }
     });
   } catch (error) {
@@ -1105,46 +971,25 @@ export const sendDeadlineReminders = async (req, res) => {
 
       const subject = `⏰ Reminder: "${title}" is Due Tomorrow`;
 
-      const employeeMessage = `
-<p>Hello,</p>
+      const employeeMessage = generateTaskEmailTemplate({
+        badge: "DUE TOMORROW",
+        badgeType: "amber",
+        headline: `Reminder: "${title}" is due tomorrow`,
+        subheadline: `Scheduled completion date: ${formattedDate}. Please complete or update status before the deadline.`,
+        task,
+        taskId: task._id,
+        actionText: "Open Task in DoNow →",
+      });
 
-<p>This is a friendly reminder that your assigned task <strong>"${title}"</strong> is scheduled to be completed by <strong>${formattedDate}</strong>.</p>
-
-<p>Please make sure the task is completed before the deadline to avoid any delays.</p>
-
-<p>If you have already completed the task, kindly update its status in the DoNow System.</p>
-
-<p>Thank you for your attention and timely action.</p>
-
-<p><strong>Task Details:</strong></p>
-<ul>
-  <li><strong>Task:</strong> ${title}</li>
-  <li><strong>Due Date:</strong> ${formattedDate}</li>
-</ul>
-
-<p>Best Regards,<br>
-DoNow System</p>
-`;
-
-      const adminMessage = `
-<p>Hello ${adminId?.name || "Admin"},</p>
-
-<p>This is an automated reminder that the following task assigned to your team is due tomorrow.</p>
-
-<p><strong>Task Details:</strong></p>
-<ul>
-  <li><strong>Task:</strong> ${title}</li>
-  <li><strong>Due Date:</strong> ${formattedDate}</li>
-  <li><strong>Assigned To:</strong> ${assignees.map((a) => a.name).join(", ")}</li>
-</ul>
-
-<p>Please follow up with the assigned team member(s) if necessary to ensure the task is completed on time.</p>
-
-<p>Thank you.</p>
-
-<p>Best Regards,<br>
-DoNow System</p>
-`;
+      const adminMessage = generateTaskEmailTemplate({
+        badge: "TEAM TASK DUE TOMORROW",
+        badgeType: "amber",
+        headline: `Team task "${title}" is due tomorrow`,
+        subheadline: `Assigned to: ${assignees.map((a) => a.name).join(", ")}.`,
+        task,
+        taskId: task._id,
+        actionText: "View Team Task in DoNow →",
+      });
 
       // Send to assignees
       if (assignees && assignees.length > 0) {

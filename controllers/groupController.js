@@ -6,6 +6,7 @@ import {
   notifyMultipleUsers,
 } from "../helpers/notificationHelper.js";
 import { uploadMultipleToCloudinary } from "../helpers/uploadHelper.js";
+import { generateGeneralEmailTemplate } from "../helpers/emailTemplates.js";
 
 export const createGroup = async (req, res) => {
   try {
@@ -42,15 +43,13 @@ export const createGroup = async (req, res) => {
             adminId: req.userId,
             title: "Group Created",
             message: `The group "${group.name}" was successfully created.`,
-            emailMessage: `
-<p>Hello,</p>
-<p>The group <strong>"${group.name}"</strong> was successfully created.</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">Go to Workspace</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+            emailMessage: generateGeneralEmailTemplate({
+              badge: "WORKSPACE CREATED",
+              badgeType: "emerald",
+              headline: `Group "${group.name}" created`,
+              message: `<p style="margin: 0 0 10px 0;">Your group <strong>"${group.name}"</strong> was created successfully.</p><p style="margin: 0; color: #64748b;">You can now add tasks, sections, and collaborate with your team.</p>`,
+              actionText: "Open Workspace →",
+            }),
             type: "group",
           });
 
@@ -63,15 +62,13 @@ export const createGroup = async (req, res) => {
                   adminId: req.userId,
                   title: "Added to Group",
                   message: `You have been added to the new group: "${group.name}".`,
-                  emailMessage: `
-<p>Hello,</p>
-<p>You have been added to the new group <strong>"${group.name}"</strong>.</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Group</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+                  emailMessage: generateGeneralEmailTemplate({
+                    badge: "GROUP INVITATION",
+                    badgeType: "indigo",
+                    headline: `Added to "${group.name}"`,
+                    message: `<p style="margin: 0 0 10px 0;">You have been added to the workspace group <strong>"${group.name}"</strong> in DoNow.</p><p style="margin: 0; color: #64748b;">Log in to view group tasks and collaborate with your team.</p>`,
+                    actionText: "View Group →",
+                  }),
                   type: "group",
                 });
               }
@@ -163,15 +160,13 @@ export const updateGroup = async (req, res) => {
                   adminId: req.userId,
                   title: "Added to Group",
                   message: `You have been added to the group: "${group.name}".`,
-                  emailMessage: `
-<p>Hello,</p>
-<p>You have been added to the group <strong>"${group.name}"</strong>.</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Group</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
+                  emailMessage: generateGeneralEmailTemplate({
+                    badge: "GROUP INVITATION",
+                    badgeType: "indigo",
+                    headline: `Added to "${group.name}"`,
+                    message: `<p style="margin: 0 0 10px 0;">You have been added to the workspace group <strong>"${group.name}"</strong> in DoNow.</p><p style="margin: 0; color: #64748b;">Log in to view group tasks and collaborate with your team.</p>`,
+                    actionText: "View Group →",
+                  }),
                   type: "group",
                 });
               }
