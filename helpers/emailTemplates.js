@@ -204,14 +204,7 @@ const renderEmailShell = ({
                           </a>
                         </td>
                       </tr>
-                      <tr>
-                        <td align="center" style="padding-top: 14px;">
-                          <p style="margin: 0; color: #94a3b8; font-size: 12px; line-height: 1.4;">
-                            Button not opening? Copy and paste this URL into your browser:<br/>
-                            <a href="${actionUrl}" target="_blank" style="color: #6366f1; word-break: break-all; text-decoration: underline;">${actionUrl}</a>
-                          </p>
-                        </td>
-                      </tr>
+                     
                     </table>
                     `
                         : ""
