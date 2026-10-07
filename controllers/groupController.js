@@ -27,13 +27,22 @@ export const createGroup = async (req, res) => {
     });
 
     if (group) {
-      // Notify creator that the group was successfully created
-      await createNotification({
-        userId: req.userId,
-        adminId: req.userId,
-        title: "Group Created",
-        message: `The group "${group.name}" was successfully created.`,
-        emailMessage: `
+      res.status(201).json({
+        status: true,
+        message: "Group created successfully",
+        data: group,
+      });
+
+      // Dispatch notifications in background
+      setImmediate(async () => {
+        try {
+          // Notify creator that the group was successfully created
+          await createNotification({
+            userId: req.userId,
+            adminId: req.userId,
+            title: "Group Created",
+            message: `The group "${group.name}" was successfully created.`,
+            emailMessage: `
 <p>Hello,</p>
 <p>The group <strong>"${group.name}"</strong> was successfully created.</p>
 <div style="text-align:center;margin-top:30px;">
@@ -42,19 +51,19 @@ export const createGroup = async (req, res) => {
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-        type: "group",
-      });
+            type: "group",
+          });
 
-      // Notify other members
-      if (members && members.length > 0) {
-        for (const memberId of members) {
-          if (memberId.toString() !== req.userId.toString()) {
-            await createNotification({
-              userId: memberId,
-              adminId: req.userId,
-              title: "Added to Group",
-              message: `You have been added to the new group: "${group.name}".`,
-              emailMessage: `
+          // Notify other members
+          if (members && members.length > 0) {
+            for (const memberId of members) {
+              if (memberId.toString() !== req.userId.toString()) {
+                await createNotification({
+                  userId: memberId,
+                  adminId: req.userId,
+                  title: "Added to Group",
+                  message: `You have been added to the new group: "${group.name}".`,
+                  emailMessage: `
 <p>Hello,</p>
 <p>You have been added to the new group <strong>"${group.name}"</strong>.</p>
 <div style="text-align:center;margin-top:30px;">
@@ -63,16 +72,14 @@ export const createGroup = async (req, res) => {
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-              type: "group",
-            });
+                  type: "group",
+                });
+              }
+            }
           }
+        } catch (notifErr) {
+          console.error("Background notification error in createGroup:", notifErr);
         }
-      }
-
-      res.status(201).json({
-        status: true,
-        message: "Group created successfully",
-        data: group,
       });
     } else {
       res.status(400).json({ status: false, message: "Invalid group data" });
@@ -136,19 +143,27 @@ export const updateGroup = async (req, res) => {
 
       const updatedGroup = await group.save();
 
-      // Notify new members
+      res.status(200).json({
+        status: true,
+        message: "Group updated successfully",
+        data: updatedGroup,
+      });
+
+      // Notify new members in background
       if (members) {
-        const newMembers = members.filter(
-          (m) => !oldMembers.includes(m.toString()),
-        );
-        for (const memberId of newMembers) {
-          if (memberId.toString() !== req.userId.toString()) {
-            await createNotification({
-              userId: memberId,
-              adminId: req.userId,
-              title: "Added to Group",
-              message: `You have been added to the group: "${group.name}".`,
-              emailMessage: `
+        setImmediate(async () => {
+          try {
+            const newMembers = members.filter(
+              (m) => !oldMembers.includes(m.toString()),
+            );
+            for (const memberId of newMembers) {
+              if (memberId.toString() !== req.userId.toString()) {
+                await createNotification({
+                  userId: memberId,
+                  adminId: req.userId,
+                  title: "Added to Group",
+                  message: `You have been added to the group: "${group.name}".`,
+                  emailMessage: `
 <p>Hello,</p>
 <p>You have been added to the group <strong>"${group.name}"</strong>.</p>
 <div style="text-align:center;margin-top:30px;">
@@ -157,17 +172,15 @@ export const updateGroup = async (req, res) => {
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-              type: "group",
-            });
+                  type: "group",
+                });
+              }
+            }
+          } catch (notifErr) {
+            console.error("Background notification error in addMemberToGroup:", notifErr);
           }
-        }
+        });
       }
-
-      res.status(200).json({
-        status: true,
-        message: "Group updated successfully",
-        data: updatedGroup,
-      });
     } else {
       res.status(404).json({ status: false, message: "Group not found" });
     }
@@ -195,25 +208,31 @@ export const deleteGroup = async (req, res) => {
 
       await Group.findByIdAndDelete(id);
 
-      // Notify members about group deletion
-      await notifyMultipleUsers({
-        userIds: memberIds,
-        adminId: req.userId,
-        title: "Group Deleted",
-        message: `The group "${groupName}" has been deleted.`,
-        emailMessage: `
+      res.status(200).json({
+        status: true,
+        message: "Group deleted successfully",
+      });
+
+      // Notify members about group deletion in background
+      setImmediate(async () => {
+        try {
+          await notifyMultipleUsers({
+            userIds: memberIds,
+            adminId: req.userId,
+            title: "Group Deleted",
+            message: `The group "${groupName}" has been deleted.`,
+            emailMessage: `
 <p>Hello,</p>
 <p>The group <strong>"${groupName}"</strong> has been deleted.</p>
 <p>If you have any questions, please contact the administrator.</p>
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-        type: "group",
-      });
-
-      res.status(200).json({
-        status: true,
-        message: "Group deleted successfully",
+            type: "group",
+          });
+        } catch (notifErr) {
+          console.error("Background notification error in deleteGroup:", notifErr);
+        }
       });
     } else {
       res.status(404).json({ status: false, message: "Group not found" });

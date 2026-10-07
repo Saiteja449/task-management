@@ -158,13 +158,23 @@ export const createTask = async (req, res) => {
     });
 
     if (task) {
-      // Notify the creator that the task was successfully created
-      await createNotification({
-        userId: req.userId,
-        adminId: taskAdminId,
-        title: "✅ Task Created Successfully",
-        message: `Task "${title}" was successfully created. Priority: ${priority || "Medium"}.`,
-        emailMessage: `
+      // Respond immediately to the client to eliminate latency and avoid "Processing" stalls
+      res.status(201).json({
+        status: true,
+        message: "Task created successfully",
+        data: task,
+      });
+
+      // Dispatch notifications and emails in background
+      setImmediate(async () => {
+        try {
+          // Notify the creator that the task was successfully created
+          await createNotification({
+            userId: req.userId,
+            adminId: taskAdminId,
+            title: "✅ Task Created Successfully",
+            message: `Task "${title}" was successfully created. Priority: ${priority || "Medium"}.`,
+            emailMessage: `
     <p>Hello,</p>
 
     <p>Your task has been created successfully in <strong>DoNow</strong>.</p>
@@ -208,19 +218,19 @@ export const createTask = async (req, res) => {
 
     <p>Thank you,<br><strong>DoNow Team</strong></p>
   `,
-        type: "task",
-      });
+            type: "task",
+          });
 
-      // Notify assignees
-      if (resolvedAssignees && resolvedAssignees.length > 0) {
-        for (const assigneeId of resolvedAssignees) {
-          if (assigneeId.toString() !== req.userId.toString()) {
-            await createNotification({
-              userId: assigneeId,
-              adminId: taskAdminId,
-              title: "New Task Assigned",
-              message: `You have been assigned a new task: "${title}". Priority: ${priority || "Medium"}.`,
-              emailMessage: `
+          // Notify assignees
+          if (resolvedAssignees && resolvedAssignees.length > 0) {
+            for (const assigneeId of resolvedAssignees) {
+              if (assigneeId.toString() !== req.userId.toString()) {
+                await createNotification({
+                  userId: assigneeId,
+                  adminId: taskAdminId,
+                  title: "New Task Assigned",
+                  message: `You have been assigned a new task: "${title}". Priority: ${priority || "Medium"}.`,
+                  emailMessage: `
 <p>Hello,</p>
 
 <p>You have been assigned a new task in <strong>DoNow</strong>.</p>
@@ -309,17 +319,15 @@ Open Task
 <p>Best Regards,<br>
 <strong>DoNow Team</strong></p>
 `,
-              type: "task",
-              attachments: task.attachments,
-            });
+                  type: "task",
+                  attachments: task.attachments,
+                });
+              }
+            }
           }
+        } catch (notifErr) {
+          console.error("Background notification error in createTask:", notifErr);
         }
-      }
-
-      res.status(201).json({
-        status: true,
-        message: "Task created successfully",
-        data: task,
       });
     } else {
       res.status(400).json({ status: false, message: "Invalid task data" });
@@ -473,19 +481,29 @@ export const updateTask = async (req, res) => {
 
       const updatedTask = await task.save();
 
-      const isPersonalTask =
-        task.taskType === "personal" ||
-        (!task.taskType && task.groupId === "personal");
+      // Send response immediately to avoid UI stalls and waiting on notifications
+      res.status(200).json({
+        status: true,
+        message: "Task updated successfully",
+        data: updatedTask,
+      });
 
-      // Notify if status changed
-      if (req.body.status && req.body.status !== oldStatus) {
-        if (isPersonalTask) {
-          await createNotification({
-            userId: req.userId,
-            adminId,
-            title: "Personal Task Updated",
-            message: `Your personal task "${task.title}" status has been updated to "${req.body.status}".`,
-            emailMessage: `
+      // Dispatch notifications and emails in background
+      setImmediate(async () => {
+        try {
+          const isPersonalTask =
+            task.taskType === "personal" ||
+            (!task.taskType && task.groupId === "personal");
+
+          // Notify if status changed
+          if (req.body.status && req.body.status !== oldStatus) {
+            if (isPersonalTask) {
+              await createNotification({
+                userId: req.userId,
+                adminId,
+                title: "Personal Task Updated",
+                message: `Your personal task "${task.title}" status has been updated to "${req.body.status}".`,
+                emailMessage: `
 <p>Hello,</p>
 <p>Your personal task <strong>"${task.title}"</strong> has been updated.</p>
 <p><strong>New Status:</strong> ${req.body.status}</p>
@@ -496,64 +514,64 @@ export const updateTask = async (req, res) => {
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-            type: "task",
-          });
-        } else {
-          // Notify admin
-          if (adminId.toString() !== req.userId.toString()) {
-            await createNotification({
-              userId: adminId,
-              adminId,
-              title: "Task Status Updated",
-              message: `The task "${task.title}" status has been updated to "${req.body.status}" by ${user.name}.`,
-              emailMessage: `
-<p>Hello,</p>
-<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>New Status:</strong> ${req.body.status}</p>
-<p><strong>Updated By:</strong> ${user.name}</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
-              type: "task",
-            });
-          }
-
-          // Notify assignees
-          for (const assigneeId of task.assignees) {
-            if (assigneeId.toString() !== req.userId.toString()) {
-              await createNotification({
-                userId: assigneeId,
-                adminId,
-                title: "Task Status Updated",
-                message: `Your task "${task.title}" status has been updated to "${req.body.status}".`,
-                emailMessage: `
-<p>Hello,</p>
-<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>New Status:</strong> ${req.body.status}</p>
-<p><strong>Updated By:</strong> ${user.name}</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
                 type: "task",
               });
+            } else {
+              // Notify admin
+              if (adminId.toString() !== req.userId.toString()) {
+                await createNotification({
+                  userId: adminId,
+                  adminId,
+                  title: "Task Status Updated",
+                  message: `The task "${task.title}" status has been updated to "${req.body.status}" by ${user.name}.`,
+                  emailMessage: `
+<p>Hello,</p>
+<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>New Status:</strong> ${req.body.status}</p>
+<p><strong>Updated By:</strong> ${user.name}</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
+`,
+                  type: "task",
+                });
+              }
+
+              // Notify assignees
+              for (const assigneeId of task.assignees) {
+                if (assigneeId.toString() !== req.userId.toString()) {
+                  await createNotification({
+                    userId: assigneeId,
+                    adminId,
+                    title: "Task Status Updated",
+                    message: `Your task "${task.title}" status has been updated to "${req.body.status}".`,
+                    emailMessage: `
+<p>Hello,</p>
+<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>New Status:</strong> ${req.body.status}</p>
+<p><strong>Updated By:</strong> ${user.name}</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
+`,
+                    type: "task",
+                  });
+                }
+              }
             }
-          }
-        }
-      } else {
-        // Notify general update
-        if (isPersonalTask) {
-          await createNotification({
-            userId: req.userId,
-            adminId,
-            title: "Personal Task Updated",
-            message: `Your personal task "${task.title}" has been updated.`,
-            emailMessage: `
+          } else {
+            // Notify general update
+            if (isPersonalTask) {
+              await createNotification({
+                userId: req.userId,
+                adminId,
+                title: "Personal Task Updated",
+                message: `Your personal task "${task.title}" has been updated.`,
+                emailMessage: `
 <p>Hello,</p>
 <p>Your personal task <strong>"${task.title}"</strong> has been updated.</p>
 <div style="text-align:center;margin-top:30px;">
@@ -562,17 +580,17 @@ export const updateTask = async (req, res) => {
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-            type: "task",
-          });
-        } else {
-          for (const assigneeId of task.assignees) {
-            if (assigneeId.toString() !== req.userId.toString()) {
-              await createNotification({
-                userId: assigneeId,
-                adminId,
-                title: "Task Updated",
-                message: `The task "${task.title}" has been updated. Please check for details.`,
-                emailMessage: `
+                type: "task",
+              });
+            } else {
+              for (const assigneeId of task.assignees) {
+                if (assigneeId.toString() !== req.userId.toString()) {
+                  await createNotification({
+                    userId: assigneeId,
+                    adminId,
+                    title: "Task Updated",
+                    message: `The task "${task.title}" has been updated. Please check for details.`,
+                    emailMessage: `
 <p>Hello,</p>
 <p>The task <strong>"${task.title}"</strong> has been updated.</p>
 <p><strong>Updated By:</strong> ${user.name}</p>
@@ -583,17 +601,15 @@ export const updateTask = async (req, res) => {
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-                type: "task",
-              });
+                    type: "task",
+                  });
+                }
+              }
             }
           }
+        } catch (notifErr) {
+          console.error("Background notification error in updateTask:", notifErr);
         }
-      }
-
-      res.status(200).json({
-        status: true,
-        message: "Task updated successfully",
-        data: updatedTask,
       });
     } else {
       res.status(404).json({ status: false, message: "Task not found" });
@@ -627,14 +643,21 @@ export const deleteTask = async (req, res) => {
 
       await Task.findByIdAndDelete(id);
 
-      // Notify assignees about deletion
-      for (const assigneeId of assignees) {
-        await createNotification({
-          userId: assigneeId,
-          adminId: adminIdValue,
-          title: "Task Deleted",
-          message: `The task "${title}" has been deleted.`,
-          emailMessage: `
+      res.status(200).json({
+        status: true,
+        message: "Task deleted successfully",
+      });
+
+      // Notify assignees about deletion in background
+      setImmediate(async () => {
+        try {
+          for (const assigneeId of assignees) {
+            await createNotification({
+              userId: assigneeId,
+              adminId: adminIdValue,
+              title: "Task Deleted",
+              message: `The task "${title}" has been deleted.`,
+              emailMessage: `
 <p>Hello,</p>
 <p>The task <strong>"${title}"</strong> has been deleted.</p>
 <p><strong>Deleted By:</strong> ${user.name}</p>
@@ -642,13 +665,12 @@ export const deleteTask = async (req, res) => {
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-          type: "task",
-        });
-      }
-
-      res.status(200).json({
-        status: true,
-        message: "Task deleted successfully",
+              type: "task",
+            });
+          }
+        } catch (notifErr) {
+          console.error("Background notification error in deleteTask:", notifErr);
+        }
       });
     } else {
       res.status(404).json({ status: false, message: "Task not found" });
@@ -712,15 +734,27 @@ export const addComment = async (req, res) => {
 
       await task.save();
 
-      // Notify about comment
-      // If employee commented, notify Admin
+      const updatedTask = await Task.findById(id).populate(
+        "comments.userId",
+        "name avatar",
+      );
+
+      res.status(201).json({
+        status: true,
+        message: "Comment added successfully",
+        data: updatedTask.comments[updatedTask.comments.length - 1],
+      });
+
+      // Notify about comment in background
       if (user.role === "Employee") {
-        await createNotification({
-          userId: adminId,
-          adminId,
-          title: "New Comment on Task",
-          message: `${user.name} commented on "${task.title}": "${text.substring(0, 50)}..."`,
-          emailMessage: `
+        setImmediate(async () => {
+          try {
+            await createNotification({
+              userId: adminId,
+              adminId,
+              title: "New Comment on Task",
+              message: `${user.name} commented on "${task.title}": "${text.substring(0, 50)}..."`,
+              emailMessage: `
 <p>Hello,</p>
 <p>A new comment was added to the task <strong>"${task.title}"</strong>.</p>
 <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:25px 0;">
@@ -735,20 +769,13 @@ export const addComment = async (req, res) => {
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-          type: "task",
+              type: "task",
+            });
+          } catch (notifErr) {
+            console.error("Background notification error in addComment:", notifErr);
+          }
         });
       }
-
-      const updatedTask = await Task.findById(id).populate(
-        "comments.userId",
-        "name avatar",
-      );
-
-      res.status(201).json({
-        status: true,
-        message: "Comment added successfully",
-        data: updatedTask.comments[updatedTask.comments.length - 1],
-      });
     } else {
       res.status(404).json({ status: false, message: "Task not found" });
     }
@@ -960,19 +987,29 @@ export const updateTaskStatus = async (req, res) => {
     task.status = status;
     const updatedTask = await task.save();
 
-    const isPersonalTask =
-      task.taskType === "personal" ||
-      (!task.taskType && task.groupId === "personal");
+    // Send response immediately to avoid UI stalls and waiting on notifications
+    res.status(200).json({
+      status: true,
+      message: "Task status updated successfully",
+      data: updatedTask,
+    });
 
-    // Notify if status changed
-    if (status !== oldStatus) {
-      if (isPersonalTask) {
-        await createNotification({
-          userId: req.userId,
-          adminId: task.adminId,
-          title: "Personal Task Status Updated",
-          message: `Your personal task "${task.title}" status has been updated to "${status}".`,
-          emailMessage: `
+    // Dispatch notifications and emails in background
+    setImmediate(async () => {
+      try {
+        const isPersonalTask =
+          task.taskType === "personal" ||
+          (!task.taskType && task.groupId === "personal");
+
+        // Notify if status changed
+        if (status !== oldStatus) {
+          if (isPersonalTask) {
+            await createNotification({
+              userId: req.userId,
+              adminId: task.adminId,
+              title: "Personal Task Status Updated",
+              message: `Your personal task "${task.title}" status has been updated to "${status}".`,
+              emailMessage: `
 <p>Hello,</p>
 <p>Your personal task <strong>"${task.title}"</strong> status has been updated.</p>
 <p><strong>New Status:</strong> ${status}</p>
@@ -982,61 +1019,59 @@ export const updateTaskStatus = async (req, res) => {
 <br>
 <p>Best Regards,<br><strong>DoNow Team</strong></p>
 `,
-          type: "task",
-        });
-      } else {
-        // Notify admin
-        if (task.adminId.toString() !== req.userId.toString()) {
-          await createNotification({
-            userId: task.adminId,
-            adminId: task.adminId,
-            title: "Task Status Updated",
-            message: `The task "${task.title}" status has been updated to "${status}" by ${user.name}.`,
-            emailMessage: `
-<p>Hello,</p>
-<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>New Status:</strong> ${status}</p>
-<p><strong>Updated By:</strong> ${user.name}</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
-            type: "task",
-          });
-        }
-
-        // Notify other assignees
-        for (const assigneeId of task.assignees) {
-          if (assigneeId.toString() !== req.userId.toString()) {
-            await createNotification({
-              userId: assigneeId,
-              adminId: task.adminId,
-              title: "Task Status Updated",
-              message: `The status of task "${task.title}" has been updated to "${status}".`,
-              emailMessage: `
-<p>Hello,</p>
-<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
-<p><strong>New Status:</strong> ${status}</p>
-<p><strong>Updated By:</strong> ${user.name}</p>
-<div style="text-align:center;margin-top:30px;">
-  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
-</div>
-<br>
-<p>Best Regards,<br><strong>DoNow Team</strong></p>
-`,
               type: "task",
             });
+          } else {
+            // Notify admin
+            if (task.adminId.toString() !== req.userId.toString()) {
+              await createNotification({
+                userId: task.adminId,
+                adminId: task.adminId,
+                title: "Task Status Updated",
+                message: `The task "${task.title}" status has been updated to "${status}" by ${user.name}.`,
+                emailMessage: `
+<p>Hello,</p>
+<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>New Status:</strong> ${status}</p>
+<p><strong>Updated By:</strong> ${user.name}</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
+`,
+                type: "task",
+              });
+            }
+
+            // Notify other assignees
+            for (const assigneeId of task.assignees) {
+              if (assigneeId.toString() !== req.userId.toString()) {
+                await createNotification({
+                  userId: assigneeId,
+                  adminId: task.adminId,
+                  title: "Task Status Updated",
+                  message: `The status of task "${task.title}" has been updated to "${status}".`,
+                  emailMessage: `
+<p>Hello,</p>
+<p>The status of the task <strong>"${task.title}"</strong> has been updated.</p>
+<p><strong>New Status:</strong> ${status}</p>
+<p><strong>Updated By:</strong> ${user.name}</p>
+<div style="text-align:center;margin-top:30px;">
+  <a href="${process.env.FRONTEND_URL || "https://DoNow.netlify.app"}/login" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">View Task</a>
+</div>
+<br>
+<p>Best Regards,<br><strong>DoNow Team</strong></p>
+`,
+                  type: "task",
+                });
+              }
+            }
           }
         }
+      } catch (notifErr) {
+        console.error("Background notification error in updateTaskStatus:", notifErr);
       }
-    }
-
-    res.status(200).json({
-      status: true,
-      message: "Task status updated successfully",
-      data: updatedTask,
     });
   } catch (error) {
     res.status(500).json({ status: false, message: error.message });

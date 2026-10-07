@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { emailQueue } from "./emailQueue.js";
 
 const sendEmployeeEmail = async (
   email,
@@ -9,15 +9,6 @@ const sendEmployeeEmail = async (
   designation = "Employee",
 ) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
 
     const initials = adminName
       .split(" ")
@@ -248,8 +239,7 @@ This invitation was sent by <strong>${adminName}</strong> on behalf of <strong>$
 `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent: %s", info.messageId);
+    emailQueue.enqueue(mailOptions);
     return true;
   } catch (error) {
     console.error("Error sending email:", error);
@@ -265,15 +255,6 @@ export const sendNotificationEmail = async (
   attachments = [],
 ) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
 
     const frontendUrl =
       process.env.FRONTEND_URL || "https://DoNow.netlify.app";
@@ -385,8 +366,7 @@ export const sendNotificationEmail = async (
       `,
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log("MAIL SENT");
+    emailQueue.enqueue(mailOptions);
     return true;
   } catch (error) {
     console.error("Error sending notification email:", error);

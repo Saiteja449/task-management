@@ -19,7 +19,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  })
+);
 
 // Serve uploads folder statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -29,13 +36,14 @@ connectDB();
 // Initialize scheduled jobs
 startTaskReminders();
 
-app.use('/api/users', userRoutes);
-app.use('/api/employees', employeeRoutes);
-app.use('/api/groups', groupRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/dashboard', dashboardRoutes);
+app.use(['/api/users', '/task-management/api/users'], userRoutes);
+app.use(['/api/employees', '/task-management/api/employees'], employeeRoutes);
+app.use(['/api/groups', '/task-management/api/groups'], groupRoutes);
+app.use(['/api/tasks', '/task-management/api/tasks'], taskRoutes);
+app.use(['/api/notifications', '/task-management/api/notifications'], notificationRoutes);
+app.use(['/api/dashboard', '/task-management/api/dashboard'], dashboardRoutes);
 
+// DoNow API Health Check
 app.get('/', (req, res) => {
   res.send('DoNow API is running (ES Modules)...');
 });

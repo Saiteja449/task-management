@@ -25,7 +25,7 @@ export const createNotification = async ({
 }) => {
   try {
     // 1. Create in-app notification
-    await Notification.create({
+    const notification = await Notification.create({
       userId,
       adminId,
       title,
@@ -33,13 +33,21 @@ export const createNotification = async ({
       type,
     });
 
-    // 2. Send email notification if requested
+    // 2. Send email notification asynchronously in the background via queue
     if (sendEmail) {
-      const user = await User.findById(userId);
-      if (user && user.email) {
-        await sendNotificationEmail(user.email, title, title, emailMessage || message, attachments);
-      }
+      User.findById(userId)
+        .select("email")
+        .then((user) => {
+          if (user && user.email) {
+            sendNotificationEmail(user.email, title, title, emailMessage || message, attachments);
+          }
+        })
+        .catch((error) => {
+          console.error("Error finding user for email notification:", error);
+        });
     }
+
+    return notification;
   } catch (error) {
     console.error("Error in createNotification helper:", error);
   }
@@ -59,10 +67,33 @@ export const notifyMultipleUsers = async ({
   attachments = [],
 }) => {
   try {
-    const promises = userIds.map((userId) =>
-      createNotification({ userId, adminId, title, message, emailMessage, type, sendEmail, attachments })
-    );
-    await Promise.all(promises);
+    if (!userIds || userIds.length === 0) return;
+
+    // 1. Batch create in-app notifications
+    const notifications = userIds.map((userId) => ({
+      userId,
+      adminId,
+      title,
+      message,
+      type,
+    }));
+    await Notification.insertMany(notifications, { ordered: false });
+
+    // 2. Send email notifications asynchronously in the background via queue
+    if (sendEmail) {
+      User.find({ _id: { $in: userIds } })
+        .select("email")
+        .then((users) => {
+          users.forEach((user) => {
+            if (user && user.email) {
+              sendNotificationEmail(user.email, title, title, emailMessage || message, attachments);
+            }
+          });
+        })
+        .catch((error) => {
+          console.error("Error finding users for bulk email notification:", error);
+        });
+    }
   } catch (error) {
     console.error("Error in notifyMultipleUsers helper:", error);
   }

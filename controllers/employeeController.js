@@ -113,19 +113,25 @@ export const addEmployee = async (req, res) => {
     });
 
     if (employee) {
-      const adminUser = await User.findById(req.userId);
-      await sendEmployeeEmail(
-        email,
-        defaultPassword,
-        name,
-        adminUser?.name || "Administrator",
-        adminUser?.businessName || "Your Organization",
-        designation || "Employee",
-      );
-
       res.status(201).json({
         status: true,
-        message: "Employee added successfully and email sent",
+        message: "Employee added successfully",
+      });
+
+      setImmediate(async () => {
+        try {
+          const adminUser = await User.findById(req.userId);
+          await sendEmployeeEmail(
+            email,
+            defaultPassword,
+            name,
+            adminUser?.name || "Administrator",
+            adminUser?.businessName || "Your Organization",
+            designation || "Employee",
+          );
+        } catch (mailErr) {
+          console.error("Background error sending employee email:", mailErr);
+        }
       });
     } else {
       res.status(400).json({ status: false, message: "Invalid employee data" });
