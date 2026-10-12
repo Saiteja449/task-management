@@ -32,14 +32,17 @@ const startTaskReminders = () => {
           ],
         })
           .populate("assignees", "name email")
-          .populate("responsiblePerson", "name email");
+          .populate("responsiblePerson", "name email")
+          .populate("responsiblePersons", "name email");
 
         // Group tasks by user
         const userReminders = new Map();
 
         tasks.forEach((task) => {
           let recipients = [];
-          if (task.responsiblePerson) {
+          if (task.responsiblePersons && task.responsiblePersons.length > 0) {
+            recipients = task.responsiblePersons;
+          } else if (task.responsiblePerson) {
             recipients = [task.responsiblePerson];
           } else if (task.assignees && task.assignees.length > 0) {
             recipients = task.assignees;

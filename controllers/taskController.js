@@ -25,7 +25,8 @@ const resolveTaskGroupName = async (task, currentUser = null) => {
       (currentUser?.role === "Admin" ? currentUser._id : null);
 
     if (adminIdToLook && task?.taskType !== "personal") {
-      const adm = await User.findById(adminIdToLook).select("businessName name");
+      const adm =
+        await User.findById(adminIdToLook).select("businessName name");
       if (adm?.businessName) return adm.businessName;
     }
 
@@ -74,6 +75,34 @@ export const createTask = async (req, res) => {
           : [req.body.assignees];
       }
     }
+
+    // Parse responsiblePersons (supports multiple or single)
+    let resolvedResponsiblePersons = [];
+    if (req.body.responsiblePersons) {
+      try {
+        resolvedResponsiblePersons = JSON.parse(req.body.responsiblePersons);
+      } catch {
+        resolvedResponsiblePersons = Array.isArray(req.body.responsiblePersons)
+          ? req.body.responsiblePersons
+          : [req.body.responsiblePersons];
+      }
+    } else if (responsiblePerson) {
+      try {
+        const parsed = JSON.parse(responsiblePerson);
+        resolvedResponsiblePersons = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        resolvedResponsiblePersons = [responsiblePerson];
+      }
+    }
+
+    resolvedResponsiblePersons = (Array.isArray(resolvedResponsiblePersons)
+      ? resolvedResponsiblePersons
+      : [resolvedResponsiblePersons]
+    )
+      .filter(Boolean)
+      .map((id) => (typeof id === "object" && id._id ? id._id.toString() : id.toString()));
+
+    const primaryResponsiblePerson = resolvedResponsiblePersons[0] || null;
 
     if (!title || !dueDate) {
       return res.status(400).json({
@@ -191,7 +220,8 @@ export const createTask = async (req, res) => {
       taskType: normalizedTaskType,
       groupId: normalizedGroupId,
       section: section ? section.trim() : "General",
-      responsiblePerson: responsiblePerson || null,
+      responsiblePerson: primaryResponsiblePerson,
+      responsiblePersons: resolvedResponsiblePersons,
       adminId: taskAdminId,
       createdBy: req.userId,
       attachments: attachmentUrls,
@@ -303,6 +333,7 @@ export const getTasks = async (req, res) => {
     const tasks = await Task.find(query)
       .populate("assignees", "name email role avatar")
       .populate("responsiblePerson", "name email role avatar")
+      .populate("responsiblePersons", "name email role avatar")
       .populate("comments.userId", "name avatar")
       .populate("createdBy", "name email avatar")
       .lean();
@@ -381,6 +412,39 @@ export const updateTask = async (req, res) => {
       }
       if (parsedAssignees) {
         req.body.assignees = parsedAssignees;
+      }
+
+      // Parse responsiblePersons (supports multiple or single)
+      let parsedResponsiblePersons = null;
+      if (req.body.responsiblePersons !== undefined) {
+        try {
+          parsedResponsiblePersons = JSON.parse(req.body.responsiblePersons);
+        } catch {
+          parsedResponsiblePersons = Array.isArray(req.body.responsiblePersons)
+            ? req.body.responsiblePersons
+            : [req.body.responsiblePersons];
+        }
+      } else if (req.body.responsiblePerson !== undefined) {
+        try {
+          const parsed = JSON.parse(req.body.responsiblePerson);
+          parsedResponsiblePersons = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          parsedResponsiblePersons = req.body.responsiblePerson ? [req.body.responsiblePerson] : [];
+        }
+      }
+
+      if (parsedResponsiblePersons !== null) {
+        parsedResponsiblePersons = (Array.isArray(parsedResponsiblePersons)
+          ? parsedResponsiblePersons
+          : [parsedResponsiblePersons]
+        )
+          .filter(Boolean)
+          .map((id) => (typeof id === "object" && id._id ? id._id.toString() : id.toString()));
+
+        task.responsiblePersons = parsedResponsiblePersons;
+        task.responsiblePerson = parsedResponsiblePersons[0] || null;
+        delete req.body.responsiblePersons;
+        delete req.body.responsiblePerson;
       }
 
       // Automatically handle group and section logic if provided
@@ -729,6 +793,7 @@ export const getAssignedTasks = async (req, res) => {
     })
       .populate("assignees", "name email role avatar")
       .populate("responsiblePerson", "name email role avatar")
+      .populate("responsiblePersons", "name email role avatar")
       .populate("comments.userId", "name avatar")
       .populate("createdBy", "name email avatar")
       .lean();
@@ -779,6 +844,8 @@ export const getGroupAssignedTasks = async (req, res) => {
       ],
     })
       .populate("assignees", "name email role avatar")
+      .populate("responsiblePerson", "name email role avatar")
+      .populate("responsiblePersons", "name email role avatar")
       .populate("comments.userId", "name avatar")
       .populate("createdBy", "name email avatar")
       .lean();
@@ -817,6 +884,7 @@ export const getTaskDetails = async (req, res) => {
     const task = await Task.findById(id)
       .populate("assignees", "name email role avatar")
       .populate("responsiblePerson", "name email role avatar")
+      .populate("responsiblePersons", "name email role avatar")
       .populate("comments.userId", "name avatar")
       .populate("createdBy", "name avatar")
       .lean();
