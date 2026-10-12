@@ -143,8 +143,18 @@ export const addEmployee = async (req, res) => {
 
 export const getEmployees = async (req, res) => {
   try {
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser) {
+      return res.status(404).json({ status: false, message: "User not found" });
+    }
+
+    const organizationAdminId =
+      currentUser.role === "Admin"
+        ? currentUser._id
+        : currentUser.adminId || currentUser._id;
+
     const employees = await User.find({
-      adminId: req.userId,
+      adminId: organizationAdminId,
       role: "Employee",
     })
       .select("-password")
