@@ -116,23 +116,30 @@ export const updateGroup = async (req, res) => {
 
     if (group) {
       const user = await User.findById(req.userId);
-      const isGroupAdmin = group.admin.toString() === req.userId;
+      const isGroupAdmin = group.admin.toString() === req.userId.toString();
       const isAdminRole = user?.role === "Admin";
-      const isMember = group.members.some((m) => m.toString() === req.userId);
+      const isMember = group.members.some((m) => m.toString() === req.userId.toString());
 
-      if (!isGroupAdmin && !isAdminRole) {
-        if (!isMember) {
+      if (!isGroupAdmin && !isAdminRole && !isMember) {
+        // Any user can add employees to the workspace
+        if (name || description || sections) {
           return res.status(403).json({
             status: false,
-            message: "Not authorized to update this group",
+            message: "Not authorized to modify workspace settings or categories",
           });
         }
-
-        // Employee members can only update sections
-        if (name || description || members) {
+        if (!members || (Array.isArray(members) && members.length === 0)) {
+          return res.status(400).json({
+            status: false,
+            message: "No employees provided to add",
+          });
+        }
+      } else if (!isGroupAdmin && !isAdminRole) {
+        // Workspace members can add employees and update categories/sections
+        if (name || description) {
           return res.status(403).json({
             status: false,
-            message: "Employees can only modify group categories",
+            message: "Only the workspace creator or admin can modify workspace settings",
           });
         }
       }
@@ -140,7 +147,26 @@ export const updateGroup = async (req, res) => {
       const oldMembers = group.members.map((m) => m.toString());
       if (name) group.name = name;
       if (description !== undefined) group.description = description;
-      if (members) group.members = members;
+
+      if (members) {
+        const incomingMembers = Array.isArray(members)
+          ? members.map((m) => (m._id ? m._id.toString() : m.toString()))
+          : [members.toString()];
+
+        if (isGroupAdmin || isAdminRole) {
+          // Admin or creator can set members directly (including remove)
+          const finalMembers = [...incomingMembers];
+          if (!finalMembers.includes(group.admin.toString())) {
+            finalMembers.push(group.admin.toString());
+          }
+          group.members = [...new Set(finalMembers)];
+        } else {
+          // Regular members or other users: preserve existing members and append new ones
+          const merged = [...new Set([...oldMembers, ...incomingMembers])];
+          group.members = merged;
+        }
+      }
+
       if (sections) group.sections = sections;
 
       const updatedGroup = await group.save();
