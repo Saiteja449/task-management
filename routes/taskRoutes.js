@@ -10,6 +10,7 @@ import {
   getTaskDetails,
   updateTaskStatus,
   sendDeadlineReminders,
+  togglePinTask,
 } from "../controllers/taskController.js";
 
 import { protect, admin } from "../middlewares/authMiddleware.js";
@@ -25,6 +26,7 @@ router.get("/get-assigned-tasks", protect, getAssignedTasks);
 router.get("/get-group-assigned-tasks", protect, getGroupAssignedTasks);
 router.get("/get-task-details/:id", protect, getTaskDetails);
 router.put("/update-status/:id", protect, updateTaskStatus);
+router.put("/toggle-pin/:id", protect, togglePinTask);
 router.post("/add-comment/:id", protect, addComment);
 router.get("/send-deadline-reminders", sendDeadlineReminders);
 

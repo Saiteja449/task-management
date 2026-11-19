@@ -125,10 +125,10 @@ export const createTask = async (req, res) => {
 
     if (normalizedTaskType !== "personal" && user.role !== "Admin") {
       if (normalizedTaskType === "group") {
-        // Employee can create group task if they are part of the group
+        // Employee can create group task if they are part of the group or created it
         const groupCheck = await Group.findOne({
           _id: normalizedGroupId,
-          members: user._id,
+          $or: [{ members: user._id }, { admin: user._id }],
         });
         if (!groupCheck) {
           return res.status(403).json({
@@ -210,6 +210,7 @@ export const createTask = async (req, res) => {
       }
     }
 
+    const isPinnedVal = req.body.isPinned === "true" || req.body.isPinned === true;
     const task = await Task.create({
       title,
       description: description || "",
@@ -227,6 +228,8 @@ export const createTask = async (req, res) => {
       attachments: attachmentUrls,
       reminders: reminders === "true" || reminders === true,
       recurring: recurring || "None",
+      isPinned: isPinnedVal,
+      pinnedAt: isPinnedVal ? new Date() : null,
     });
 
     if (task) {
@@ -331,6 +334,7 @@ export const getTasks = async (req, res) => {
           };
 
     const tasks = await Task.find(query)
+      .sort({ isPinned: -1, pinnedAt: -1, createdAt: -1 })
       .populate("assignees", "name email role avatar")
       .populate("responsiblePerson", "name email role avatar")
       .populate("responsiblePersons", "name email role avatar")
@@ -478,6 +482,15 @@ export const updateTask = async (req, res) => {
         req.body.groupId = "personal";
       } else if (req.body.taskType === "employee") {
         req.body.groupId = "personal";
+      }
+
+      if (req.body.isPinned !== undefined) {
+        req.body.isPinned = req.body.isPinned === true || req.body.isPinned === "true";
+        if (req.body.isPinned && !task.isPinned) {
+          req.body.pinnedAt = new Date();
+        } else if (!req.body.isPinned) {
+          req.body.pinnedAt = null;
+        }
       }
 
       const oldStatus = task.status;
@@ -791,6 +804,7 @@ export const getAssignedTasks = async (req, res) => {
         },
       ],
     })
+      .sort({ isPinned: -1, pinnedAt: -1, createdAt: -1 })
       .populate("assignees", "name email role avatar")
       .populate("responsiblePerson", "name email role avatar")
       .populate("responsiblePersons", "name email role avatar")
@@ -843,6 +857,7 @@ export const getGroupAssignedTasks = async (req, res) => {
         },
       ],
     })
+      .sort({ isPinned: -1, pinnedAt: -1, createdAt: -1 })
       .populate("assignees", "name email role avatar")
       .populate("responsiblePerson", "name email role avatar")
       .populate("responsiblePersons", "name email role avatar")
@@ -1153,6 +1168,84 @@ export const sendDeadlineReminders = async (req, res) => {
     });
   } catch (error) {
     console.error("Error sending deadline reminders:", error);
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const togglePinTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const task = await Task.findById(id);
+
+    if (!task) {
+      return res.status(404).json({ status: false, message: "Task not found" });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(401).json({ status: false, message: "User not found" });
+    }
+
+    // Check authorization: user can pin if they can access the task
+    const isAssignee = task.assignees?.some(
+      (a) => a.toString() === req.userId.toString()
+    );
+    const isCreator = task.createdBy.toString() === req.userId.toString();
+    const isResponsible =
+      (task.responsiblePersons &&
+        task.responsiblePersons.some(
+          (r) => r.toString() === req.userId.toString()
+        )) ||
+      (task.responsiblePerson &&
+        task.responsiblePerson.toString() === req.userId.toString());
+    const isPrivatePersonalTask =
+      task.groupId === "personal" &&
+      (task.taskType === "personal" || !task.taskType) &&
+      !isCreator;
+    const isAdmin =
+      user.role === "Admin" &&
+      task.adminId.toString() === user._id.toString() &&
+      !isPrivatePersonalTask;
+
+    let isGroupMember = false;
+    if (task.groupId && task.groupId !== "personal") {
+      const group = await Group.findById(task.groupId).select("members admin");
+      if (
+        group &&
+        ((group.members &&
+          group.members.some((m) => m.toString() === req.userId.toString())) ||
+          (group.admin &&
+            group.admin.toString() === req.userId.toString()))
+      ) {
+        isGroupMember = true;
+      }
+    }
+
+    if (!isAdmin && !isCreator && !isAssignee && !isResponsible && !isGroupMember) {
+      return res.status(403).json({
+        status: false,
+        message: "Not authorized to pin/unpin this task",
+      });
+    }
+
+    task.isPinned = !task.isPinned;
+    task.pinnedAt = task.isPinned ? new Date() : null;
+
+    const updatedTask = await task.save();
+
+    const populatedTask = await Task.findById(updatedTask._id)
+      .populate("assignees", "name email role avatar")
+      .populate("responsiblePerson", "name email role avatar")
+      .populate("responsiblePersons", "name email role avatar")
+      .populate("comments.userId", "name avatar")
+      .populate("createdBy", "name email avatar");
+
+    res.status(200).json({
+      status: true,
+      message: updatedTask.isPinned ? "Task pinned successfully" : "Task unpinned successfully",
+      data: populatedTask,
+    });
+  } catch (error) {
     res.status(500).json({ status: false, message: error.message });
   }
 };

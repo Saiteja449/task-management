@@ -28,6 +28,7 @@ export const getEmployeeDetails = async (req, res) => {
         },
       ],
     })
+      .sort({ isPinned: -1, pinnedAt: -1, createdAt: -1 })
       .populate("comments.userId", "name avatar")
       .lean();
 

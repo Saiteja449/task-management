@@ -19,10 +19,15 @@ export const createGroup = async (req, res) => {
       });
     }
 
+    const memberList = Array.isArray(members) ? [...members] : [];
+    if (!memberList.some((m) => m.toString() === req.userId.toString())) {
+      memberList.push(req.userId);
+    }
+
     const group = await Group.create({
       name,
       description,
-      members: members || [],
+      members: memberList,
       sections: req.body.sections || [],
       admin: req.userId,
     });
@@ -190,11 +195,14 @@ export const deleteGroup = async (req, res) => {
     const group = await Group.findById(id);
 
     if (group) {
-      // Check if user is the admin of the group
-      if (group.admin.toString() !== req.userId) {
+      const user = await User.findById(req.userId);
+      const isSystemAdmin = user && user.role === "Admin";
+      const isGroupAdmin = group.admin.toString() === req.userId.toString();
+
+      if (!isGroupAdmin && !isSystemAdmin) {
         return res.status(403).json({
           status: false,
-          message: "Only the admin who created the group can delete it",
+          message: "Only the admin who created the group or system admin can delete it",
         });
       }
 
@@ -253,24 +261,25 @@ export const getGroupDetails = async (req, res) => {
     }
 
     const user = await User.findById(req.userId);
-    const adminId = user.role === "Admin" ? user._id : user.adminId;
+    const isGroupAdmin = group.admin.toString() === req.userId.toString();
+    const isMember = group.members.some(
+      (m) => (m._id ? m._id.toString() : m.toString()) === req.userId.toString(),
+    );
 
-    if (group.admin.toString() !== adminId.toString()) {
-      const isMember = group.members.some(
-        (m) => m._id.toString() === req.userId,
-      );
-      if (!isMember && user.role !== "Admin") {
-        return res
-          .status(403)
-          .json({
-            status: false,
-            message: "Not authorized to view this group",
-          });
-      }
+    if (!isGroupAdmin && !isMember && user.role !== "Admin") {
+      return res
+        .status(403)
+        .json({
+          status: false,
+          message: "Not authorized to view this group",
+        });
     }
 
     const tasks = await Task.find({ groupId: id })
+      .sort({ isPinned: -1, pinnedAt: -1, createdAt: -1 })
       .populate("assignees", "name email role avatar")
+      .populate("responsiblePerson", "name email role avatar")
+      .populate("responsiblePersons", "name email role avatar")
       .populate("comments.userId", "name avatar")
       .populate("createdBy", "name email avatar");
 

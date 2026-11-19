@@ -104,6 +104,13 @@ const taskSchema = mongoose.Schema(
       enum: ["None", "Daily", "Weekly", "Monthly"],
       default: "None",
     },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    pinnedAt: {
+      type: Date,
+    },
     comments: [commentSchema],
   },
   {
